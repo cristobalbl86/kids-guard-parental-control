@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.gradlew.bat clean:*)",
+      "Bash(./gradlew:*)",
+      "Bash(npx react-native run-android)",
+      "Bash(ls:*)",
+      "Bash(timeout /t 5 /nobreak)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
