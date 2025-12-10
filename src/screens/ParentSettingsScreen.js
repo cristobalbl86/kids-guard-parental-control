@@ -223,18 +223,21 @@ export default function ParentSettingsScreen({ navigation }) {
               {value}%
             </Text>
 
-            <Slider
-              style={styles.slider}
-              minimumValue={0}
-              maximumValue={100}
-              step={1}
-              value={value}
-              onValueChange={onValueChange}
-              onSlidingComplete={onValueChange}
-              minimumTrackTintColor={theme.colors.primary}
-              maximumTrackTintColor={theme.colors.disabled}
-              thumbTintColor={theme.colors.primary}
-            />
+            <View style={styles.sliderWrapper}>
+              <Slider
+                style={styles.slider}
+                minimumValue={0}
+                maximumValue={100}
+                step={1}
+                value={value}
+                onValueChange={onValueChange}
+                onSlidingComplete={onValueChange}
+                minimumTrackTintColor={theme.colors.primary}
+                maximumTrackTintColor={theme.colors.disabled}
+                thumbTintColor={theme.colors.primary}
+                disabled={saving}
+              />
+            </View>
 
             <View style={styles.sliderLabels}>
               <Text variant="bodySmall" style={styles.sliderLabel}>
@@ -424,9 +427,16 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 15,
   },
+  sliderWrapper: {
+    width: '100%',
+    paddingHorizontal: Platform.OS === 'ios' ? 0 : 5,
+    marginVertical: 10,
+  },
   slider: {
     width: '100%',
     height: 40,
+    minHeight: 40,
+    opacity: 1,
   },
   sliderLabels: {
     flexDirection: 'row',
