@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert, Platform } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, Platform, TextInput } from 'react-native';
 import { Button, Text, Card, Switch, IconButton, Divider } from 'react-native-paper';
-import Slider from '@react-native-community/slider';
 import { theme, statusColors } from '../utils/theme';
 import { getAllSettings, changePIN } from '../utils/storage';
 import { updateVolumeSettings, getVolume } from '../utils/volumeControl';
@@ -218,33 +217,56 @@ export default function ParentSettingsScreen({ navigation }) {
             </View>
           </View>
 
-          <View style={styles.sliderContainer}>
-            <Text variant="displayMedium" style={styles.valueDisplay}>
-              {value}%
-            </Text>
-
-            <View style={styles.sliderWrapper}>
-              <Slider
-                style={styles.slider}
-                minimumValue={0}
-                maximumValue={100}
-                step={1}
-                value={value}
-                onValueChange={onValueChange}
-                onSlidingComplete={onValueChange}
-                minimumTrackTintColor={theme.colors.primary}
-                maximumTrackTintColor={theme.colors.disabled}
-                thumbTintColor={theme.colors.primary}
-                disabled={saving}
+          <View style={styles.controlContainer}>
+            <View style={styles.inputRow}>
+              <IconButton
+                icon="minus"
+                size={24}
+                iconColor={theme.colors.primary}
+                style={styles.incrementButton}
+                onPress={() => {
+                  const newValue = Math.max(0, value - 1);
+                  onValueChange(newValue);
+                }}
+                disabled={saving || value <= 0}
+              />
+              
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={styles.input}
+                  value={String(value)}
+                  onChangeText={(text) => {
+                    const numValue = parseInt(text) || 0;
+                    const clampedValue = Math.min(100, Math.max(0, numValue));
+                    onValueChange(clampedValue);
+                  }}
+                  keyboardType="numeric"
+                  maxLength={3}
+                  editable={!saving}
+                  selectTextOnFocus
+                />
+                <Text style={styles.percentSymbol}>%</Text>
+              </View>
+              
+              <IconButton
+                icon="plus"
+                size={24}
+                iconColor={theme.colors.primary}
+                style={styles.incrementButton}
+                onPress={() => {
+                  const newValue = Math.min(100, value + 1);
+                  onValueChange(newValue);
+                }}
+                disabled={saving || value >= 100}
               />
             </View>
-
-            <View style={styles.sliderLabels}>
-              <Text variant="bodySmall" style={styles.sliderLabel}>
-                0%
+            
+            <View style={styles.rangeLabels}>
+              <Text variant="bodySmall" style={styles.rangeLabel}>
+                Min: 0%
               </Text>
-              <Text variant="bodySmall" style={styles.sliderLabel}>
-                100%
+              <Text variant="bodySmall" style={styles.rangeLabel}>
+                Max: 100%
               </Text>
             </View>
           </View>
@@ -277,7 +299,7 @@ export default function ParentSettingsScreen({ navigation }) {
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
-        nestedScrollEnabled={true}
+        keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
           <Text variant="headlineSmall" style={styles.headerTitle}>
@@ -418,32 +440,52 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: theme.colors.text,
   },
-  sliderContainer: {
+  controlContainer: {
     marginVertical: 20,
   },
-  valueDisplay: {
-    textAlign: 'center',
-    color: theme.colors.primary,
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  incrementButton: {
+    margin: 0,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    borderWidth: 2,
+    borderColor: theme.colors.primary,
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    marginHorizontal: 10,
+    minWidth: 100,
+  },
+  input: {
+    fontSize: 32,
     fontWeight: 'bold',
-    marginBottom: 15,
+    color: theme.colors.primary,
+    textAlign: 'center',
+    paddingVertical: 8,
+    minWidth: 60,
   },
-  sliderWrapper: {
-    width: '100%',
-    paddingHorizontal: Platform.OS === 'ios' ? 0 : 5,
-    marginVertical: 10,
+  percentSymbol: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: theme.colors.primary,
+    marginLeft: 5,
   },
-  slider: {
-    width: '100%',
-    height: 40,
-    minHeight: 40,
-    opacity: 1,
-  },
-  sliderLabels: {
+  rangeLabels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 5,
+    paddingHorizontal: 10,
   },
-  sliderLabel: {
+  rangeLabel: {
     color: theme.colors.text,
     opacity: 0.6,
   },
