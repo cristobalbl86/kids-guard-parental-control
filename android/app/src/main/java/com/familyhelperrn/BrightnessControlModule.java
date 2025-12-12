@@ -63,10 +63,12 @@ public class BrightnessControlModule extends ReactContextBaseJavaModule {
                     // Also try to set system brightness (requires WRITE_SETTINGS permission)
                     try {
                         ContentResolver cResolver = reactContext.getContentResolver();
+                        // Convert percentage (0-100) to Android brightness value (0-255)
+                        int systemBrightnessValue = Math.round(clampedBrightness * 255.0f / 100.0f);
                         Settings.System.putInt(
                             cResolver,
                             Settings.System.SCREEN_BRIGHTNESS,
-                            (int) (brightness * 255)
+                            systemBrightnessValue
                         );
 
                         // Disable auto brightness
@@ -101,26 +103,59 @@ public class BrightnessControlModule extends ReactContextBaseJavaModule {
                         return;
                     }
 
-                    Window window = activity.getWindow();
-                    WindowManager.LayoutParams layoutParams = window.getAttributes();
-                    float brightness = layoutParams.screenBrightness;
+                    float brightness;
+                    String brightnessSource;
 
-                    // If brightness is set to system default (-1), get system brightness
-                    if (brightness < 0) {
-                        try {
-                            ContentResolver cResolver = reactContext.getContentResolver();
-                            int systemBrightness = Settings.System.getInt(
-                                cResolver,
-                                Settings.System.SCREEN_BRIGHTNESS
-                            );
-                            brightness = systemBrightness / 255.0f;
-                        } catch (Settings.SettingNotFoundException e) {
-                            brightness = 0.5f; // Default to 50%
+                    // Always try to read from system brightness first
+                    try {
+                        ContentResolver cResolver = reactContext.getContentResolver();
+                        int systemBrightness = Settings.System.getInt(
+                            cResolver,
+                            Settings.System.SCREEN_BRIGHTNESS
+                        );
+                        // Convert from 0-255 range to 0-100 percentage
+                        brightness = (systemBrightness * 100.0f) / 255.0f;
+                        brightnessSource = "system";
+                        Log.d(TAG, "Read system brightness: " + systemBrightness + "/255 (" + brightness + "%)");
+                    } catch (Settings.SettingNotFoundException e) {
+                        // Fallback to window brightness if system brightness not available
+                        Log.w(TAG, "System brightness not found, falling back to window brightness");
+                        Window window = activity.getWindow();
+                        WindowManager.LayoutParams layoutParams = window.getAttributes();
+                        float windowBrightness = layoutParams.screenBrightness;
+
+                        if (windowBrightness < 0) {
+                            // -1.0f means "use system brightness", but we couldn't read system
+                            // This shouldn't happen, but default to 50%
+                            brightness = 50.0f;
+                            brightnessSource = "default";
+                            Log.w(TAG, "Window brightness is -1 (use system), but system not available. Using default 50%");
+                        } else {
+                            brightness = windowBrightness * 100.0f;
+                            brightnessSource = "window";
+                            Log.d(TAG, "Read window brightness: " + windowBrightness + " (" + brightness + "%)");
+                        }
+                    } catch (SecurityException e) {
+                        // Permission denied - fall back to window brightness
+                        Log.w(TAG, "Permission denied reading system brightness", e);
+                        Window window = activity.getWindow();
+                        WindowManager.LayoutParams layoutParams = window.getAttributes();
+                        float windowBrightness = layoutParams.screenBrightness;
+
+                        if (windowBrightness < 0) {
+                            brightness = 50.0f;
+                            brightnessSource = "default";
+                        } else {
+                            brightness = windowBrightness * 100.0f;
+                            brightnessSource = "window";
                         }
                     }
 
-                    int brightnessPercent = Math.round(brightness * 100);
-                    Log.d(TAG, "Current brightness: " + brightnessPercent + "%");
+                    int brightnessPercent = Math.round(brightness);
+                    // Ensure brightness is clamped between 0 and 100
+                    brightnessPercent = Math.max(0, Math.min(100, brightnessPercent));
+
+                    Log.d(TAG, "getBrightness() returning " + brightnessPercent + "% from " + brightnessSource + " brightness");
                     promise.resolve(brightnessPercent);
                 } catch (Exception e) {
                     Log.e(TAG, "Error getting brightness", e);
@@ -210,6 +245,21 @@ public class BrightnessControlModule extends ReactContextBaseJavaModule {
             enforcedBrightness = -1;
             stopBrightnessMonitoring();
 
+            // Reset window brightness to use system brightness
+            UiThreadUtil.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Activity activity = getCurrentActivity();
+                    if (activity != null) {
+                        Window window = activity.getWindow();
+                        WindowManager.LayoutParams layoutParams = window.getAttributes();
+                        layoutParams.screenBrightness = -1.0f;  // Use system brightness
+                        window.setAttributes(layoutParams);
+                        Log.d(TAG, "Window brightness reset to use system brightness");
+                    }
+                }
+            });
+
             Log.d(TAG, "Stopped enforcing brightness");
             promise.resolve(true);
         } catch (Exception e) {
@@ -274,8 +324,8 @@ public class BrightnessControlModule extends ReactContextBaseJavaModule {
 
                     // Check if brightness has changed significantly
                     if (Math.abs(currentPercent - enforcedBrightness) > 5) {
-                        // Restore enforced brightness
-                        int targetBrightness = (int) ((enforcedBrightness / 100.0) * 255);
+                        // Restore enforced brightness - convert percentage (0-100) to Android value (0-255)
+                        int targetBrightness = Math.round(enforcedBrightness * 255.0f / 100.0f);
                         
                         // Set system brightness
                         Settings.System.putInt(
@@ -284,12 +334,13 @@ public class BrightnessControlModule extends ReactContextBaseJavaModule {
                             targetBrightness
                         );
 
-                        // Also set window brightness
+                        // Set window brightness to -1.0f to use system brightness
+                        // This makes the enforcement immediately visible in the app window
                         Activity activity = getCurrentActivity();
                         if (activity != null) {
                             Window window = activity.getWindow();
                             WindowManager.LayoutParams layoutParams = window.getAttributes();
-                            layoutParams.screenBrightness = enforcedBrightness / 100.0f;
+                            layoutParams.screenBrightness = -1.0f;  // Use system brightness
                             window.setAttributes(layoutParams);
                         }
 

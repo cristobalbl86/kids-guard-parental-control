@@ -17,8 +17,28 @@ export default function ParentSettingsScreen({ navigation }) {
 
   useEffect(() => {
     loadSettings();
-    checkBrightnessPermission();
   }, []);
+
+  useEffect(() => {
+    // Check permission when screen comes into focus
+    const unsubscribe = navigation.addListener('focus', () => {
+      checkAndReapplyBrightness();
+    });
+
+    return unsubscribe;
+  }, [brightnessValue, brightnessLocked]);
+
+  const checkAndReapplyBrightness = async () => {
+    if (Platform.OS === 'android' && brightnessLocked) {
+      const hasPermission = await checkWriteSettingsPermission();
+      if (hasPermission) {
+        // Permission is granted, re-apply brightness to ensure system brightness is set
+        const { setBrightness } = require('../utils/brightnessControl');
+        await setBrightness(brightnessValue);
+        console.log('Reapplied brightness after permission check');
+      }
+    }
+  };
 
   const checkBrightnessPermission = async () => {
     if (Platform.OS === 'android') {
@@ -33,6 +53,16 @@ export default function ParentSettingsScreen({ navigation }) {
               text: 'Open Settings',
               onPress: async () => {
                 await requestWriteSettingsPermission();
+                // After opening settings, wait and check if permission was granted
+                setTimeout(async () => {
+                  const permissionGranted = await checkWriteSettingsPermission();
+                  if (permissionGranted && brightnessLocked) {
+                    // Re-apply brightness if it was locked
+                    const { setBrightness } = require('../utils/brightnessControl');
+                    await setBrightness(brightnessValue);
+                    Alert.alert('Success', 'Brightness permission granted. Settings have been applied.');
+                  }
+                }, 2000);
               },
             },
           ]
@@ -44,7 +74,7 @@ export default function ParentSettingsScreen({ navigation }) {
   const loadSettings = async () => {
     try {
       const settings = await getAllSettings();
-      
+
       // If unlocked, load current system values
       if (!settings.volume.locked) {
         const currentVolume = await getVolume();
@@ -53,7 +83,7 @@ export default function ParentSettingsScreen({ navigation }) {
         setVolumeValue(settings.volume.volume);
       }
       setVolumeLocked(settings.volume.locked);
-      
+
       if (!settings.brightness.locked) {
         const currentBrightness = await getBrightness();
         setBrightnessValue(currentBrightness);
@@ -61,6 +91,19 @@ export default function ParentSettingsScreen({ navigation }) {
         setBrightnessValue(settings.brightness.brightness);
       }
       setBrightnessLocked(settings.brightness.locked);
+
+      // After loading settings, check and request permission if brightness is locked
+      if (settings.brightness.locked) {
+        checkBrightnessPermission();
+
+        // If permission already exists, reapply brightness to fix any mismatch
+        const hasPermission = await checkWriteSettingsPermission();
+        if (hasPermission) {
+          const { setBrightness } = require('../utils/brightnessControl');
+          await setBrightness(settings.brightness.brightness);
+          console.log('Reapplied brightness on load');
+        }
+      }
     } catch (error) {
       console.error('Error loading settings:', error);
       Alert.alert('Error', 'Failed to load settings');

@@ -5,7 +5,10 @@
       "Bash(./gradlew:*)",
       "Bash(npx react-native run-android)",
       "Bash(ls:*)",
-      "Bash(timeout /t 5 /nobreak)"
+      "Bash(timeout /t 5 /nobreak)",
+      "Bash(npx react-native:*)",
+      "Bash(npm run android:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []
