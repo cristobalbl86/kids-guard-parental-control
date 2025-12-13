@@ -2,13 +2,13 @@ package com.familyhelperrn;
 
 import android.app.Activity;
 import android.content.ContentResolver;
-import android.content.Context;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.Window;
 import android.view.WindowManager;
 import android.database.ContentObserver;
 import android.os.Handler;
+import android.content.res.Resources;
 
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
@@ -27,6 +27,9 @@ public class BrightnessControlModule extends ReactContextBaseJavaModule {
     private ContentObserver brightnessObserver;
     private int enforcedBrightness = -1;
     private boolean isEnforcing = false;
+    private boolean brightnessRangeInitialized = false;
+    private int brightnessMinimum = 0;
+    private int brightnessMaximum = 255;
 
     public BrightnessControlModule(ReactApplicationContext context) {
         super(context);
@@ -53,18 +56,14 @@ public class BrightnessControlModule extends ReactContextBaseJavaModule {
 
                     // Clamp brightness between 0 and 100
                     int clampedBrightness = Math.max(0, Math.min(100, brightnessPercent));
-                    float brightness = clampedBrightness / 100.0f;
 
-                    Window window = activity.getWindow();
-                    WindowManager.LayoutParams layoutParams = window.getAttributes();
-                    layoutParams.screenBrightness = brightness;
-                    window.setAttributes(layoutParams);
+                    ensureBrightnessRangeInitialized();
+
+                    int systemBrightnessValue = convertPercentToSystemValue(clampedBrightness);
 
                     // Also try to set system brightness (requires WRITE_SETTINGS permission)
                     try {
                         ContentResolver cResolver = reactContext.getContentResolver();
-                        // Convert percentage (0-100) to Android brightness value (0-255)
-                        int systemBrightnessValue = Math.round(clampedBrightness * 255.0f / 100.0f);
                         Settings.System.putInt(
                             cResolver,
                             Settings.System.SCREEN_BRIGHTNESS,
@@ -81,7 +80,13 @@ public class BrightnessControlModule extends ReactContextBaseJavaModule {
                         Log.w(TAG, "Could not set system brightness (permission may be missing)", e);
                     }
 
-                    Log.d(TAG, "Brightness set to " + brightnessPercent + "%");
+                    // Ensure the current window follows the value we just applied system-wide.
+                    Window window = activity.getWindow();
+                    WindowManager.LayoutParams layoutParams = window.getAttributes();
+                    layoutParams.screenBrightness = -1.0f; // follow system brightness
+                    window.setAttributes(layoutParams);
+
+                    Log.d(TAG, "Brightness set to " + brightnessPercent + "% (system=" + systemBrightnessValue + "/" + brightnessMaximum + ")");
                     promise.resolve(true);
                 } catch (Exception e) {
                     Log.e(TAG, "Error setting brightness", e);
@@ -106,6 +111,8 @@ public class BrightnessControlModule extends ReactContextBaseJavaModule {
                     float brightness;
                     String brightnessSource;
 
+                    ensureBrightnessRangeInitialized();
+
                     // Always try to read from system brightness first
                     try {
                         ContentResolver cResolver = reactContext.getContentResolver();
@@ -113,10 +120,10 @@ public class BrightnessControlModule extends ReactContextBaseJavaModule {
                             cResolver,
                             Settings.System.SCREEN_BRIGHTNESS
                         );
-                        // Convert from 0-255 range to 0-100 percentage
-                        brightness = (systemBrightness * 100.0f) / 255.0f;
+                        // Convert from system range to 0-100 percentage
+                        brightness = convertSystemValueToPercent(systemBrightness);
                         brightnessSource = "system";
-                        Log.d(TAG, "Read system brightness: " + systemBrightness + "/255 (" + brightness + "%)");
+                        Log.d(TAG, "Read system brightness: " + systemBrightness + "/" + brightnessMaximum + " (" + brightness + "%)");
                     } catch (Settings.SettingNotFoundException e) {
                         // Fallback to window brightness if system brightness not available
                         Log.w(TAG, "System brightness not found, falling back to window brightness");
@@ -151,9 +158,7 @@ public class BrightnessControlModule extends ReactContextBaseJavaModule {
                         }
                     }
 
-                    int brightnessPercent = Math.round(brightness);
-                    // Ensure brightness is clamped between 0 and 100
-                    brightnessPercent = Math.max(0, Math.min(100, brightnessPercent));
+                    int brightnessPercent = Math.round(Math.max(0, Math.min(100, brightness)));
 
                     Log.d(TAG, "getBrightness() returning " + brightnessPercent + "% from " + brightnessSource + " brightness");
                     promise.resolve(brightnessPercent);
@@ -273,6 +278,86 @@ public class BrightnessControlModule extends ReactContextBaseJavaModule {
         promise.resolve(isEnforcing);
     }
 
+    private void ensureBrightnessRangeInitialized() {
+        if (brightnessRangeInitialized) {
+            return;
+        }
+
+        int min = 0;
+        int max = 255;
+
+        ContentResolver resolver = reactContext.getContentResolver();
+
+        try {
+            min = Settings.System.getInt(resolver, "screen_brightness_min");
+        } catch (Settings.SettingNotFoundException | SecurityException ignored) {
+        }
+
+        try {
+            max = Settings.System.getInt(resolver, "screen_brightness_max");
+        } catch (Settings.SettingNotFoundException | SecurityException ignored) {
+        }
+
+        Resources res = reactContext.getResources();
+
+        int resMinId = res.getIdentifier("config_screenBrightnessSettingMinimum", "integer", "android");
+        if (resMinId != 0) {
+            try {
+                min = res.getInteger(resMinId);
+            } catch (Resources.NotFoundException ignored) {
+            }
+        }
+
+        int resMaxId = res.getIdentifier("config_screenBrightnessSettingMaximum", "integer", "android");
+        if (resMaxId != 0) {
+            try {
+                max = res.getInteger(resMaxId);
+            } catch (Resources.NotFoundException ignored) {
+            }
+        }
+
+        if (max <= min) {
+            // Fallback to defaults if values are invalid
+            min = 0;
+            max = 255;
+        }
+
+        brightnessMinimum = Math.max(0, min);
+        brightnessMaximum = Math.max(brightnessMinimum + 1, max);
+        brightnessRangeInitialized = true;
+
+        Log.d(TAG, "Resolved brightness range -> min=" + brightnessMinimum + ", max=" + brightnessMaximum);
+    }
+
+    private int convertPercentToSystemValue(int percent) {
+        ensureBrightnessRangeInitialized();
+
+        int clampedPercent = Math.max(0, Math.min(100, percent));
+        int range = brightnessMaximum - brightnessMinimum;
+
+        if (range <= 0) {
+            return Math.round(clampedPercent * 255.0f / 100.0f);
+        }
+
+        int systemValue = Math.round(brightnessMinimum + (clampedPercent / 100.0f) * range);
+        return Math.max(brightnessMinimum, Math.min(brightnessMaximum, systemValue));
+    }
+
+    private int convertSystemValueToPercent(int systemValue) {
+        ensureBrightnessRangeInitialized();
+
+        int clampedValue = Math.max(brightnessMinimum, Math.min(brightnessMaximum, systemValue));
+        int range = brightnessMaximum - brightnessMinimum;
+
+        if (range <= 0) {
+            float normalized = clampedValue / 255.0f;
+            return Math.round(normalized * 100.0f);
+        }
+
+        float normalized = (clampedValue - brightnessMinimum) / (float) range;
+        return Math.round(Math.max(0.0f, Math.min(1.0f, normalized)) * 100.0f);
+    }
+
     private void startBrightnessMonitoring() {
         if (brightnessObserver != null) {
             return; // Already monitoring
@@ -320,12 +405,14 @@ public class BrightnessControlModule extends ReactContextBaseJavaModule {
                         cResolver,
                         Settings.System.SCREEN_BRIGHTNESS
                     );
-                    int currentPercent = (int) ((currentSystemBrightness * 100.0) / 255);
+                    ensureBrightnessRangeInitialized();
+
+                    int currentPercent = convertSystemValueToPercent(currentSystemBrightness);
 
                     // Check if brightness has changed significantly
                     if (Math.abs(currentPercent - enforcedBrightness) > 5) {
                         // Restore enforced brightness - convert percentage (0-100) to Android value (0-255)
-                        int targetBrightness = Math.round(enforcedBrightness * 255.0f / 100.0f);
+                        int targetBrightness = convertPercentToSystemValue(enforcedBrightness);
                         
                         // Set system brightness
                         Settings.System.putInt(

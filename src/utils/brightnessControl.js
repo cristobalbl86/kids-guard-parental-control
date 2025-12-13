@@ -49,6 +49,7 @@ export const setBrightness = async (brightnessPercent) => {
 export const getBrightness = async () => {
   try {
     const brightness = await BrightnessControl.getBrightness();
+    console.log(`[getBrightness] Native returned: ${brightness}, rounded: ${Math.round(brightness)}`);
     return Math.round(brightness);
   } catch (error) {
     console.error('Error getting brightness:', error);

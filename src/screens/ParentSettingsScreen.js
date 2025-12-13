@@ -74,20 +74,26 @@ export default function ParentSettingsScreen({ navigation }) {
   const loadSettings = async () => {
     try {
       const settings = await getAllSettings();
+      console.log('[loadSettings] Loaded settings:', JSON.stringify(settings));
 
       // If unlocked, load current system values
       if (!settings.volume.locked) {
         const currentVolume = await getVolume();
+        console.log('[loadSettings] Volume unlocked, got current:', currentVolume);
         setVolumeValue(currentVolume);
       } else {
+        console.log('[loadSettings] Volume locked, using stored:', settings.volume.volume);
         setVolumeValue(settings.volume.volume);
       }
       setVolumeLocked(settings.volume.locked);
 
       if (!settings.brightness.locked) {
+        console.log('[loadSettings] Brightness unlocked, calling getBrightness()...');
         const currentBrightness = await getBrightness();
+        console.log('[loadSettings] Got current brightness:', currentBrightness);
         setBrightnessValue(currentBrightness);
       } else {
+        console.log('[loadSettings] Brightness locked, using stored:', settings.brightness.brightness);
         setBrightnessValue(settings.brightness.brightness);
       }
       setBrightnessLocked(settings.brightness.locked);
