@@ -83,7 +83,9 @@ public class BrightnessControlModule extends ReactContextBaseJavaModule {
                     // Ensure the current window follows the value we just applied system-wide.
                     Window window = activity.getWindow();
                     WindowManager.LayoutParams layoutParams = window.getAttributes();
-                    layoutParams.screenBrightness = -1.0f; // follow system brightness
+                    // Set window brightness explicitly to ensure immediate feedback
+                    // Use the calculated system value to ensure consistency with the curve
+                    layoutParams.screenBrightness = (float)systemBrightnessValue / brightnessMaximum;
                     window.setAttributes(layoutParams);
 
                     Log.d(TAG, "Brightness set to " + brightnessPercent + "% (system=" + systemBrightnessValue + "/" + brightnessMaximum + ")");
@@ -112,49 +114,32 @@ public class BrightnessControlModule extends ReactContextBaseJavaModule {
                     String brightnessSource;
 
                     ensureBrightnessRangeInitialized();
+                    // Check window brightness first as it reflects what the user sees in the app
+                    Window window = activity.getWindow();
+                    WindowManager.LayoutParams layoutParams = window.getAttributes();
+                    float windowBrightness = layoutParams.screenBrightness;
 
-                    // Always try to read from system brightness first
-                    try {
-                        ContentResolver cResolver = reactContext.getContentResolver();
-                        int systemBrightness = Settings.System.getInt(
-                            cResolver,
-                            Settings.System.SCREEN_BRIGHTNESS
-                        );
-                        // Convert from system range to 0-100 percentage
-                        brightness = convertSystemValueToPercent(systemBrightness);
-                        brightnessSource = "system";
-                        Log.d(TAG, "Read system brightness: " + systemBrightness + "/" + brightnessMaximum + " (" + brightness + "%)");
-                    } catch (Settings.SettingNotFoundException e) {
-                        // Fallback to window brightness if system brightness not available
-                        Log.w(TAG, "System brightness not found, falling back to window brightness");
-                        Window window = activity.getWindow();
-                        WindowManager.LayoutParams layoutParams = window.getAttributes();
-                        float windowBrightness = layoutParams.screenBrightness;
-
-                        if (windowBrightness < 0) {
-                            // -1.0f means "use system brightness", but we couldn't read system
-                            // This shouldn't happen, but default to 50%
-                            brightness = 50.0f;
+                    if (windowBrightness >= 0) {
+                        // Convert window brightness (linear) back to percent (gamma)
+                        int estimatedSystemValue = Math.round(windowBrightness * brightnessMaximum);
+                        brightness = convertSystemValueToPercent(estimatedSystemValue);
+                        brightnessSource = "window";
+                    } else {
+                        // Fallback to system brightness
+                        try {
+                            ContentResolver cResolver = reactContext.getContentResolver();
+                            int systemBrightness = Settings.System.getInt(
+                                cResolver,
+                                Settings.System.SCREEN_BRIGHTNESS
+                            );
+                            // Convert from system range to 0-100 percentage
+                            brightness = convertSystemValueToPercent(systemBrightness);
+                            brightnessSource = "system";
+                            Log.d(TAG, "Read system brightness: " + systemBrightness + "/" + brightnessMaximum + " (" + brightness + "%)");
+                        } catch (Exception e) {
+                            Log.w(TAG, "Could not read system brightness", e);
+                            brightness = 50;
                             brightnessSource = "default";
-                            Log.w(TAG, "Window brightness is -1 (use system), but system not available. Using default 50%");
-                        } else {
-                            brightness = windowBrightness * 100.0f;
-                            brightnessSource = "window";
-                            Log.d(TAG, "Read window brightness: " + windowBrightness + " (" + brightness + "%)");
-                        }
-                    } catch (SecurityException e) {
-                        // Permission denied - fall back to window brightness
-                        Log.w(TAG, "Permission denied reading system brightness", e);
-                        Window window = activity.getWindow();
-                        WindowManager.LayoutParams layoutParams = window.getAttributes();
-                        float windowBrightness = layoutParams.screenBrightness;
-
-                        if (windowBrightness < 0) {
-                            brightness = 50.0f;
-                            brightnessSource = "default";
-                        } else {
-                            brightness = windowBrightness * 100.0f;
-                            brightnessSource = "window";
                         }
                     }
 
@@ -339,7 +324,12 @@ public class BrightnessControlModule extends ReactContextBaseJavaModule {
             return Math.round(clampedPercent * 255.0f / 100.0f);
         }
 
-        int systemValue = Math.round(brightnessMinimum + (clampedPercent / 100.0f) * range);
+        // Use quadratic curve for better perception matching (Gamma 2.0)
+        // This matches Android's slider behavior where 50% is perceptually half bright (but ~25% power)
+        float normalizedPercent = clampedPercent / 100.0f;
+        float normalizedValue = normalizedPercent * normalizedPercent; // x^2
+        
+        int systemValue = Math.round(brightnessMinimum + normalizedValue * range);
         return Math.max(brightnessMinimum, Math.min(brightnessMaximum, systemValue));
     }
 
@@ -354,8 +344,11 @@ public class BrightnessControlModule extends ReactContextBaseJavaModule {
             return Math.round(normalized * 100.0f);
         }
 
-        float normalized = (clampedValue - brightnessMinimum) / (float) range;
-        return Math.round(Math.max(0.0f, Math.min(1.0f, normalized)) * 100.0f);
+        // Inverse of quadratic curve: percent = sqrt(normalizedValue)
+        float normalizedValue = (float)(clampedValue - brightnessMinimum) / range;
+        float normalizedPercent = (float)Math.sqrt(normalizedValue);
+        
+        return Math.round(Math.max(0.0f, Math.min(1.0f, normalizedPercent)) * 100.0f);
     }
 
     private void startBrightnessMonitoring() {
@@ -421,13 +414,12 @@ public class BrightnessControlModule extends ReactContextBaseJavaModule {
                             targetBrightness
                         );
 
-                        // Set window brightness to -1.0f to use system brightness
-                        // This makes the enforcement immediately visible in the app window
+                        // Set window brightness explicitly to ensure enforcement in app
                         Activity activity = getCurrentActivity();
                         if (activity != null) {
                             Window window = activity.getWindow();
                             WindowManager.LayoutParams layoutParams = window.getAttributes();
-                            layoutParams.screenBrightness = -1.0f;  // Use system brightness
+                            layoutParams.screenBrightness = (float)targetBrightness / brightnessMaximum;
                             window.setAttributes(layoutParams);
                         }
 
