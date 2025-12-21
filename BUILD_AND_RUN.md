@@ -1,4 +1,4 @@
-# Build and Run Guide - Family Helper RN
+# Build and Run Guide - Kids Guard RN
 
 ## 🎉 Migration Complete!
 
@@ -7,11 +7,13 @@ All code has been successfully migrated from Expo to React Native CLI. The app n
 ## 📦 What Was Migrated
 
 ### ✅ Native Modules (NEW!)
+
 - **VolumeControlModule.java** - Real Android volume control
 - **BrightnessControlModule.java** - Real Android brightness control
 - Both modules registered and ready to use
 
 ### ✅ JavaScript Code
+
 - All 6 screens copied and updated
 - All 2 components copied
 - All 5 utility files migrated:
@@ -22,6 +24,7 @@ All code has been successfully migrated from Expo to React Native CLI. The app n
   - No backgroundService.js needed (native handles it)
 
 ### ✅ Configuration
+
 - AndroidManifest.xml with all required permissions
 - MainApplication.kt updated to load native modules
 - App.tsx updated for React Native CLI
@@ -32,6 +35,7 @@ All code has been successfully migrated from Expo to React Native CLI. The app n
 ### Step 1: Prerequisites
 
 Make sure you have:
+
 - ✅ Android Studio installed
 - ✅ Android SDK configured (API 33+)
 - ✅ Android device/emulator running
@@ -69,6 +73,7 @@ npx react-native run-android
 ### Step 4: View Logs
 
 In a separate terminal:
+
 ```bash
 npx react-native log-android
 ```
@@ -78,6 +83,7 @@ npx react-native log-android
 ### Issue: Build fails with "Could not find X"
 
 **Solution**: Clean and rebuild
+
 ```bash
 # On Windows:
 cd android
@@ -99,6 +105,7 @@ npx react-native run-android
 ### Issue: "No connected devices"
 
 **Solution**: Start Android emulator or connect physical device
+
 ```bash
 # List available emulators
 emulator -list-avds
@@ -113,6 +120,7 @@ adb devices
 ### Issue: Metro bundler not starting
 
 **Solution**: Start Metro manually
+
 ```bash
 # Terminal 1: Start Metro
 npx react-native start
@@ -124,6 +132,7 @@ npx react-native run-android
 ### Issue: Native module not found
 
 **Solution**: Rebuild native code
+
 ```bash
 # On Windows:
 cd android
@@ -143,6 +152,7 @@ cd ..
 ### Test Checklist
 
 1. **Initial Setup**
+
    - [ ] App launches without errors
    - [ ] Welcome screen appears
    - [ ] Math verification works
@@ -150,6 +160,7 @@ cd ..
    - [ ] PIN stored in Keychain
 
 2. **Volume Control** ⭐ (NEW!)
+
    - [ ] Set volume to 50% - device volume actually changes
    - [ ] Lock volume at 50%
    - [ ] Try changing volume with hardware buttons
@@ -157,6 +168,7 @@ cd ..
    - [ ] Check logs for "Volume enforced" messages
 
 3. **Brightness Control** ⭐ (IMPROVED!)
+
    - [ ] Set brightness to 70% - screen brightness actually changes
    - [ ] Lock brightness at 70%
    - [ ] Try changing brightness from notification shade
@@ -171,13 +183,13 @@ cd ..
 
 ## 🎯 Key Differences from Expo
 
-| Feature | Expo (Old) | React Native CLI (New) |
-|---------|-----------|------------------------|
-| **Volume Control** | ❌ Mock (console.log only) | ✅ Real AudioManager API |
-| **Volume Detection** | ❌ Not possible | ✅ ContentObserver (instant) |
-| **Brightness Control** | ⚠️ Limited API | ✅ System + Window level |
-| **Enforcement Speed** | ❌ N/A | ✅ 1-2 seconds |
-| **Background Service** | ⚠️ Unreliable | ✅ Native monitoring |
+| Feature                | Expo (Old)                 | React Native CLI (New)       |
+| ---------------------- | -------------------------- | ---------------------------- |
+| **Volume Control**     | ❌ Mock (console.log only) | ✅ Real AudioManager API     |
+| **Volume Detection**   | ❌ Not possible            | ✅ ContentObserver (instant) |
+| **Brightness Control** | ⚠️ Limited API             | ✅ System + Window level     |
+| **Enforcement Speed**  | ❌ N/A                     | ✅ 1-2 seconds               |
+| **Background Service** | ⚠️ Unreliable              | ✅ Native monitoring         |
 
 ## 📊 Expected Console Output
 
@@ -195,6 +207,7 @@ LOG  Brightness control initialized
 ```
 
 When you manually change volume/brightness:
+
 ```
 LOG  Volume enforced: 60% -> 40%
 LOG  Brightness enforced: 70% -> 50%
@@ -203,19 +216,24 @@ LOG  Brightness enforced: 70% -> 50%
 ## 🔐 Permissions
 
 The app will request these permissions:
+
 1. **WRITE_SETTINGS** - For system brightness control (auto-requested on first brightness change)
 2. **POST_NOTIFICATIONS** - For foreground service notification (Android 13+)
 
 ## 🐛 Known Issues & Solutions
 
 ### Volume buttons still work briefly
+
 **This is expected!** Android doesn't allow apps to completely block hardware buttons. The app detects the change and reverts it within 1-2 seconds.
 
 ### Brightness can be changed briefly
+
 **This is expected!** The app monitors every 2 seconds and reverts changes. For instant enforcement, you'd need accessibility service (more invasive permissions).
 
 ### App stops working when force-closed
+
 **This is expected!** No app can survive a force-close. Consider implementing:
+
 - Device Administrator mode (harder to close)
 - Kiosk mode (can't access settings)
 
@@ -224,6 +242,7 @@ The app will request these permissions:
 ### Change Monitoring Frequency
 
 Edit `src/utils/brightnessControl.js`:
+
 ```javascript
 // Line ~50: Change 2000 to 1000 for faster enforcement
 monitoringInterval = setInterval(async () => {
@@ -246,6 +265,7 @@ The native modules can be extended to show custom notifications when enforcement
 ## 🏆 Success Criteria
 
 You'll know the migration was successful when:
+
 - ✅ App builds and runs without errors
 - ✅ Volume control **actually changes device volume**
 - ✅ Brightness control **actually changes screen brightness**

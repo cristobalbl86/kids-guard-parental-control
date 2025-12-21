@@ -1,4 +1,4 @@
-package com.familyhelperrn
+package com.kidsguard
 
 import android.app.Application
 import com.facebook.react.PackageList

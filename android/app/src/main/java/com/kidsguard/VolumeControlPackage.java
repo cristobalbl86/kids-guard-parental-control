@@ -1,4 +1,4 @@
-package com.familyhelperrn;
+package com.kidsguard;
 
 import com.facebook.react.ReactPackage;
 import com.facebook.react.bridge.NativeModule;

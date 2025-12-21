@@ -1,4 +1,4 @@
-package com.familyhelperrn;
+package com.kidsguard;
 
 import android.app.Activity;
 import android.content.ContentResolver;

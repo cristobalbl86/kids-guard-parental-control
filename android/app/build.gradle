@@ -74,9 +74,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.familyhelperrn"
+    namespace "com.kidsguard"
     defaultConfig {
-        applicationId "com.familyhelperrn"
+        applicationId "com.kidsguard"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

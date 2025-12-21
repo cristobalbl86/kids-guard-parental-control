@@ -1,4 +1,4 @@
-package com.familyhelperrn;
+package com.kidsguard;
 
 import android.content.Context;
 import android.media.AudioManager;

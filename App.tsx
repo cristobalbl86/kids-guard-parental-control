@@ -1,17 +1,17 @@
 /**
- * Family Helper - Parental Control App
+ * Kids guard - Parental Control App
  * React Native CLI version
  *
  * @format
  */
 
-import React, { useState, useEffect } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
-import { Provider as PaperProvider } from 'react-native-paper';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { StatusBar } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import React, {useState, useEffect} from 'react';
+import {NavigationContainer} from '@react-navigation/native';
+import {createStackNavigator} from '@react-navigation/stack';
+import {Provider as PaperProvider} from 'react-native-paper';
+import {SafeAreaProvider} from 'react-native-safe-area-context';
+import {StatusBar} from 'react-native';
+import {GestureHandlerRootView} from 'react-native-gesture-handler';
 
 // Screens
 import WelcomeScreen from './src/screens/WelcomeScreen';
@@ -22,10 +22,10 @@ import ParentSettingsScreen from './src/screens/ParentSettingsScreen';
 import PINEntryScreen from './src/screens/PINEntryScreen';
 
 // Utils
-import { checkFirstLaunch, initializeApp } from './src/utils/storage';
-import { theme } from './src/utils/theme';
-import { initializeVolumeControl } from './src/utils/volumeControl';
-import { initializeBrightnessControl } from './src/utils/brightnessControl';
+import {checkFirstLaunch, initializeApp} from './src/utils/storage';
+import {theme} from './src/utils/theme';
+import {initializeVolumeControl} from './src/utils/volumeControl';
+import {initializeBrightnessControl} from './src/utils/brightnessControl';
 
 const Stack = createStackNavigator();
 
@@ -71,11 +71,14 @@ export default function App() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{flex: 1}}>
       <SafeAreaProvider>
         <PaperProvider theme={theme}>
           <NavigationContainer>
-            <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary} />
+            <StatusBar
+              barStyle="light-content"
+              backgroundColor={theme.colors.primary}
+            />
             <Stack.Navigator
               screenOptions={{
                 headerStyle: {
@@ -85,25 +88,26 @@ export default function App() {
                 headerTitleStyle: {
                   fontWeight: 'bold',
                 },
-              }}
-            >
+              }}>
               {!isSetupComplete ? (
                 <>
                   <Stack.Screen
                     name="Welcome"
                     component={WelcomeScreen}
-                    options={{ headerShown: false }}
+                    options={{headerShown: false}}
                   />
                   <Stack.Screen
                     name="ParentVerification"
                     component={ParentVerificationScreen}
-                    options={{ title: 'Parent Verification' }}
+                    options={{title: 'Parent Verification'}}
                   />
-                  <Stack.Screen
-                    name="SetupPIN"
-                    options={{ title: 'Set Up PIN' }}
-                  >
-                    {props => <SetupPINScreen {...props} onSetupComplete={handleSetupComplete} />}
+                  <Stack.Screen name="SetupPIN" options={{title: 'Set Up PIN'}}>
+                    {props => (
+                      <SetupPINScreen
+                        {...props}
+                        onSetupComplete={handleSetupComplete}
+                      />
+                    )}
                   </Stack.Screen>
                 </>
               ) : (
@@ -111,17 +115,17 @@ export default function App() {
                   <Stack.Screen
                     name="Home"
                     component={HomeScreen}
-                    options={{ title: 'Family Helper' }}
+                    options={{title: 'Kids Guard'}}
                   />
                   <Stack.Screen
                     name="PINEntry"
                     component={PINEntryScreen}
-                    options={{ title: 'Enter PIN' }}
+                    options={{title: 'Enter PIN'}}
                   />
                   <Stack.Screen
                     name="ParentSettings"
                     component={ParentSettingsScreen}
-                    options={{ title: 'Parent Settings' }}
+                    options={{title: 'Parent Settings'}}
                   />
                 </>
               )}

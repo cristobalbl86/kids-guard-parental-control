@@ -8,7 +8,7 @@ export default function WelcomeScreen({ navigation }) {
     <View style={styles.container}>
       <Surface style={styles.content}>
         <Text variant="headlineLarge" style={styles.title}>
-          Welcome to Family Helper
+          Welcome to Kids guard
         </Text>
 
         <Text variant="bodyLarge" style={styles.subtitle}>
