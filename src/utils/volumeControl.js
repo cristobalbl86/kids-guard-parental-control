@@ -8,9 +8,15 @@ const volumeEventEmitter = new NativeEventEmitter(NativeModules.VolumeControl);
 
 let enforcedVolume = null;
 let isEnforcing = false;
+let volumeInitialized = false;
 
 // Initialize volume control
 export const initializeVolumeControl = async () => {
+  if (volumeInitialized) {
+    console.log('Volume control already initialized - skipping duplicate call');
+    return true;
+  }
+
   try {
     console.log('Initializing volume control...');
 
@@ -21,6 +27,7 @@ export const initializeVolumeControl = async () => {
     }
 
     console.log('Volume control initialized');
+    volumeInitialized = true;
     return true;
   } catch (error) {
     console.error('Error initializing volume control:', error);

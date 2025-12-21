@@ -8,9 +8,15 @@ const brightnessEventEmitter = new NativeEventEmitter(NativeModules.BrightnessCo
 
 let enforcedBrightness = null;
 let isEnforcing = false;
+let brightnessInitialized = false;
 
 // Initialize brightness control
 export const initializeBrightnessControl = async () => {
+  if (brightnessInitialized) {
+    console.log('Brightness control already initialized - skipping duplicate call');
+    return true;
+  }
+
   try {
     console.log('Initializing brightness control...');
 
@@ -21,6 +27,7 @@ export const initializeBrightnessControl = async () => {
     }
 
     console.log('Brightness control initialized');
+    brightnessInitialized = true;
     return true;
   } catch (error) {
     console.error('Error initializing brightness control:', error);

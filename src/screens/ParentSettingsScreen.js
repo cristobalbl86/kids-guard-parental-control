@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert, Platform, TextInput } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, Platform, TextInput, ActivityIndicator } from 'react-native';
 import { Button, Text, Card, Switch, IconButton, Divider } from 'react-native-paper';
 import { theme, statusColors } from '../utils/theme';
 import { getAllSettings, changePIN } from '../utils/storage';
@@ -14,6 +14,9 @@ export default function ParentSettingsScreen({ navigation }) {
   const [brightnessLocked, setBrightnessLocked] = useState(false);
   const [showPINDialog, setShowPINDialog] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
+  const [volumeConfigured, setVolumeConfigured] = useState(false);
+  const [brightnessConfigured, setBrightnessConfigured] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -72,34 +75,52 @@ export default function ParentSettingsScreen({ navigation }) {
   };
 
   const loadSettings = async () => {
+    setIsLoadingSettings(true);
     try {
       const settings = await getAllSettings();
       console.log('[loadSettings] Loaded settings:', JSON.stringify(settings));
 
-      // If unlocked, load current system values
-      if (!settings.volume.locked) {
-        const currentVolume = await getVolume();
-        console.log('[loadSettings] Volume unlocked, got current:', currentVolume);
-        setVolumeValue(currentVolume);
-      } else {
-        console.log('[loadSettings] Volume locked, using stored:', settings.volume.volume);
-        setVolumeValue(settings.volume.volume);
-      }
-      setVolumeLocked(settings.volume.locked);
+      const hasPersistedVolume = !settings.volume?.isDefault;
+      setVolumeConfigured(hasPersistedVolume);
 
-      if (!settings.brightness.locked) {
-        console.log('[loadSettings] Brightness unlocked, calling getBrightness()...');
-        const currentBrightness = await getBrightness();
-        console.log('[loadSettings] Got current brightness:', currentBrightness);
-        setBrightnessValue(currentBrightness);
+      if (hasPersistedVolume) {
+        if (!settings.volume.locked) {
+          const currentVolume = await getVolume();
+          console.log('[loadSettings] Volume unlocked, got current:', currentVolume);
+          setVolumeValue(currentVolume);
+        } else {
+          console.log('[loadSettings] Volume locked, using stored:', settings.volume.volume);
+          setVolumeValue(settings.volume.volume);
+        }
+        setVolumeLocked(settings.volume.locked);
       } else {
-        console.log('[loadSettings] Brightness locked, using stored:', settings.brightness.brightness);
-        setBrightnessValue(settings.brightness.brightness);
+        console.log('[loadSettings] No stored volume settings - showing placeholders');
+        setVolumeValue(50);
+        setVolumeLocked(false);
       }
-      setBrightnessLocked(settings.brightness.locked);
+
+      const hasPersistedBrightness = !settings.brightness?.isDefault;
+      setBrightnessConfigured(hasPersistedBrightness);
+
+      if (hasPersistedBrightness) {
+        if (!settings.brightness.locked) {
+          console.log('[loadSettings] Brightness unlocked, calling getBrightness()...');
+          const currentBrightness = await getBrightness();
+          console.log('[loadSettings] Got current brightness:', currentBrightness);
+          setBrightnessValue(currentBrightness);
+        } else {
+          console.log('[loadSettings] Brightness locked, using stored:', settings.brightness.brightness);
+          setBrightnessValue(settings.brightness.brightness);
+        }
+        setBrightnessLocked(settings.brightness.locked);
+      } else {
+        console.log('[loadSettings] No stored brightness settings - showing placeholders');
+        setBrightnessValue(50);
+        setBrightnessLocked(false);
+      }
 
       // After loading settings, check and request permission if brightness is locked
-      if (settings.brightness.locked) {
+      if (hasPersistedBrightness && settings.brightness.locked) {
         checkBrightnessPermission();
 
         // If permission already exists, reapply brightness to fix any mismatch
@@ -113,6 +134,8 @@ export default function ParentSettingsScreen({ navigation }) {
     } catch (error) {
       console.error('Error loading settings:', error);
       Alert.alert('Error', 'Failed to load settings');
+    } finally {
+      setIsLoadingSettings(false);
     }
   };
 
@@ -137,6 +160,7 @@ export default function ParentSettingsScreen({ navigation }) {
     setSaving(false);
 
     if (success) {
+      setVolumeConfigured(true);
       Alert.alert(
         'Success',
         newLocked
@@ -163,6 +187,7 @@ export default function ParentSettingsScreen({ navigation }) {
     setSaving(false);
 
     if (success) {
+      setVolumeConfigured(true);
       Alert.alert('Success', `Volume set to ${volumeValue}%`);
     } else {
       Alert.alert('Error', 'Failed to save volume setting');
@@ -190,6 +215,7 @@ export default function ParentSettingsScreen({ navigation }) {
     setSaving(false);
 
     if (success) {
+      setBrightnessConfigured(true);
       Alert.alert(
         'Success',
         newLocked
@@ -216,6 +242,7 @@ export default function ParentSettingsScreen({ navigation }) {
     setSaving(false);
 
     if (success) {
+      setBrightnessConfigured(true);
       Alert.alert('Success', `Brightness set to ${brightnessValue}%`);
     } else {
       Alert.alert('Error', 'Failed to save brightness setting');
@@ -238,7 +265,8 @@ export default function ParentSettingsScreen({ navigation }) {
     locked,
     onValueChange,
     onLockToggle,
-    onSave
+    onSave,
+    isConfigured
   ) => {
     const statusStyle = locked ? statusColors.locked : statusColors.unlocked;
 
@@ -338,10 +366,27 @@ export default function ParentSettingsScreen({ navigation }) {
               </Text>
             </View>
           )}
+
+          {!isConfigured && (
+            <Text variant="bodySmall" style={styles.placeholderNotice}>
+              No saved value yet. Adjust the control and apply or lock to store it.
+            </Text>
+          )}
         </Card.Content>
       </Card>
     );
   };
+
+  if (isLoadingSettings) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text variant="bodyLarge" style={styles.loadingText}>
+          Loading settings...
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -366,7 +411,8 @@ export default function ParentSettingsScreen({ navigation }) {
           volumeLocked,
           handleVolumeChange,
           handleVolumeLockToggle,
-          handleVolumeSave
+          handleVolumeSave,
+          volumeConfigured
         )}
 
         {renderControlCard(
@@ -376,7 +422,8 @@ export default function ParentSettingsScreen({ navigation }) {
           brightnessLocked,
           handleBrightnessChange,
           handleBrightnessLockToggle,
-          handleBrightnessSave
+          handleBrightnessSave,
+          brightnessConfigured
         )}
 
         <Card style={styles.pinCard}>
@@ -439,6 +486,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    color: theme.colors.text,
   },
   scrollView: {
     flex: 1,
@@ -555,6 +610,12 @@ const styles = StyleSheet.create({
     flex: 1,
     color: statusColors.locked.text,
     lineHeight: 18,
+  },
+  placeholderNotice: {
+    marginTop: 12,
+    color: theme.colors.text,
+    opacity: 0.7,
+    fontStyle: 'italic',
   },
   pinCard: {
     marginBottom: 20,

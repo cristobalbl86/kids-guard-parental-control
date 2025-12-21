@@ -138,7 +138,11 @@ export const changePIN = async (oldPIN, newPIN) => {
 // Volume Settings
 export const saveVolumeSettings = async (settings) => {
   try {
-    await AsyncStorage.setItem(KEYS.VOLUME_SETTINGS, JSON.stringify(settings));
+    const payload = {
+      volume: Math.max(0, Math.min(100, settings.volume ?? 50)),
+      locked: !!settings.locked,
+    };
+    await AsyncStorage.setItem(KEYS.VOLUME_SETTINGS, JSON.stringify(payload));
   } catch (error) {
     console.error('Error saving volume settings:', error);
     throw error;
@@ -148,17 +152,30 @@ export const saveVolumeSettings = async (settings) => {
 export const getVolumeSettings = async () => {
   try {
     const settings = await AsyncStorage.getItem(KEYS.VOLUME_SETTINGS);
-    return settings ? JSON.parse(settings) : { volume: 50, locked: false };
+    if (!settings) {
+      return { volume: 50, locked: false, isDefault: true };
+    }
+
+    const parsed = JSON.parse(settings);
+    return {
+      volume: Math.max(0, Math.min(100, parsed.volume ?? 50)),
+      locked: !!parsed.locked,
+      isDefault: false,
+    };
   } catch (error) {
     console.error('Error getting volume settings:', error);
-    return { volume: 50, locked: false };
+    return { volume: 50, locked: false, isDefault: true };
   }
 };
 
 // Brightness Settings
 export const saveBrightnessSettings = async (settings) => {
   try {
-    await AsyncStorage.setItem(KEYS.BRIGHTNESS_SETTINGS, JSON.stringify(settings));
+    const payload = {
+      brightness: Math.max(0, Math.min(100, settings.brightness ?? 50)),
+      locked: !!settings.locked,
+    };
+    await AsyncStorage.setItem(KEYS.BRIGHTNESS_SETTINGS, JSON.stringify(payload));
   } catch (error) {
     console.error('Error saving brightness settings:', error);
     throw error;
@@ -168,16 +185,19 @@ export const saveBrightnessSettings = async (settings) => {
 export const getBrightnessSettings = async () => {
   try {
     const settings = await AsyncStorage.getItem(KEYS.BRIGHTNESS_SETTINGS);
-    if (settings) {
-      const parsed = JSON.parse(settings);
-      // Clamp brightness to valid range 0-100
-      parsed.brightness = Math.max(0, Math.min(100, parsed.brightness || 50));
-      return parsed;
+    if (!settings) {
+      return { brightness: 50, locked: false, isDefault: true };
     }
-    return { brightness: 50, locked: false };
+
+    const parsed = JSON.parse(settings);
+    return {
+      brightness: Math.max(0, Math.min(100, parsed.brightness ?? 50)),
+      locked: !!parsed.locked,
+      isDefault: false,
+    };
   } catch (error) {
     console.error('Error getting brightness settings:', error);
-    return { brightness: 50, locked: false };
+    return { brightness: 50, locked: false, isDefault: true };
   }
 };
 
