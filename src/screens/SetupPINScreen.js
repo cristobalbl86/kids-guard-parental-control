@@ -4,6 +4,7 @@ import { Button, Text, Surface, HelperText } from 'react-native-paper';
 import { theme } from '../utils/theme';
 import { savePIN, completeFirstLaunch } from '../utils/storage';
 import PINInput from '../components/PINInput';
+import { t } from '../utils/i18n';
 
 export default function SetupPINScreen({ navigation, onSetupComplete }) {
   const [pin, setPin] = useState('');
@@ -34,12 +35,12 @@ export default function SetupPINScreen({ navigation, onSetupComplete }) {
             onSetupComplete();
           }
         } catch (error) {
-          setError('Failed to save PIN. Please try again.');
+          setError(t('setupPIN.errorSave'));
           setLoading(false);
         }
       } else {
         // PINs don't match
-        setError('PINs do not match. Please try again.');
+        setError(t('setupPIN.errorMismatch'));
         setConfirmPin('');
         setTimeout(() => {
           setStep(1);
@@ -61,13 +62,13 @@ export default function SetupPINScreen({ navigation, onSetupComplete }) {
     <View style={styles.container}>
       <Surface style={styles.content}>
         <Text variant="headlineMedium" style={styles.title}>
-          {step === 1 ? 'Set Your PIN' : 'Confirm Your PIN'}
+          {step === 1 ? t('setupPIN.titleCreate') : t('setupPIN.titleConfirm')}
         </Text>
 
         <Text variant="bodyMedium" style={styles.instruction}>
           {step === 1
-            ? 'Create a 4-digit PIN to protect parent settings'
-            : 'Re-enter your PIN to confirm'}
+            ? t('setupPIN.instructionCreate')
+            : t('setupPIN.instructionConfirm')}
         </Text>
 
         <View style={styles.pinContainer}>
@@ -91,22 +92,22 @@ export default function SetupPINScreen({ navigation, onSetupComplete }) {
             style={styles.resetButton}
             disabled={loading}
           >
-            Start Over
+            {t('setupPIN.startOver')}
           </Button>
         )}
 
         <View style={styles.tips}>
           <Text variant="bodySmall" style={styles.tipsTitle}>
-            PIN Tips:
+            {t('setupPIN.tipsTitle')}
           </Text>
           <Text variant="bodySmall" style={styles.tipText}>
-            • Choose a PIN that's easy for you to remember
+            • {t('setupPIN.tip1')}
           </Text>
           <Text variant="bodySmall" style={styles.tipText}>
-            • Don't use obvious combinations like 1234 or 0000
+            • {t('setupPIN.tip2')}
           </Text>
           <Text variant="bodySmall" style={styles.tipText}>
-            • Keep your PIN secure and don't share it
+            • {t('setupPIN.tip3')}
           </Text>
         </View>
       </Surface>

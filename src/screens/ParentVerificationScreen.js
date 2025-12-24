@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Button, Text, TextInput, Surface, HelperText } from 'react-native-paper';
 import { theme } from '../utils/theme';
+import { t } from '../utils/i18n';
 
 export default function ParentVerificationScreen({ navigation }) {
   const [num1, setNum1] = useState(0);
@@ -30,7 +31,7 @@ export default function ParentVerificationScreen({ navigation }) {
 
     if (isNaN(userAnswer) || userAnswer !== correctAnswer) {
       setAttempts(attempts + 1);
-      setError('Incorrect answer. Please try again.');
+      setError(t('parentVerification.errorIncorrect'));
 
       if (attempts >= 2) {
         // After 3 failed attempts, generate a new problem
@@ -50,22 +51,22 @@ export default function ParentVerificationScreen({ navigation }) {
     <View style={styles.container}>
       <Surface style={styles.content}>
         <Text variant="headlineMedium" style={styles.title}>
-          Parent Verification
+          {t('parentVerification.title')}
         </Text>
 
         <Text variant="bodyMedium" style={styles.instruction}>
-          To verify you're a parent, please solve this simple math problem:
+          {t('parentVerification.instruction')}
         </Text>
 
         <View style={styles.problemContainer}>
           <Text variant="displaySmall" style={styles.problem}>
-            {num1} + {num2} = ?
+            {t('parentVerification.mathProblem', { num1, num2 })}
           </Text>
         </View>
 
         <TextInput
           mode="outlined"
-          label="Your Answer"
+          label={t('parentVerification.answerLabel')}
           value={answer}
           onChangeText={setAnswer}
           keyboardType="number-pad"
@@ -84,7 +85,7 @@ export default function ParentVerificationScreen({ navigation }) {
           style={styles.button}
           disabled={!answer}
         >
-          Verify
+          {t('common.verify')}
         </Button>
 
         <Button
@@ -92,11 +93,11 @@ export default function ParentVerificationScreen({ navigation }) {
           onPress={generateProblem}
           style={styles.newProblemButton}
         >
-          Generate New Problem
+          {t('parentVerification.newProblemButton')}
         </Button>
 
         <Text variant="bodySmall" style={styles.note}>
-          Note: This verification ensures only adults can set up parental controls.
+          {t('parentVerification.note')}
         </Text>
       </Surface>
     </View>

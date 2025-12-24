@@ -4,6 +4,7 @@ import { Button, Text, Surface, HelperText } from 'react-native-paper';
 import { theme } from '../utils/theme';
 import { verifyPIN } from '../utils/storage';
 import PINInput from '../components/PINInput';
+import { t } from '../utils/i18n';
 
 export default function PINEntryScreen({ navigation, route }) {
   const [pin, setPin] = useState('');
@@ -28,12 +29,12 @@ export default function PINEntryScreen({ navigation, route }) {
         }
       } else {
         // PIN is incorrect
-        setError('Incorrect PIN. Please try again.');
+        setError(t('pinEntry.errorIncorrect'));
         setPin('');
         setLoading(false);
       }
     } catch (error) {
-      setError(error.message || 'An error occurred. Please try again.');
+      setError(error.message || t('pinEntry.errorGeneric'));
       setPin('');
       setLoading(false);
     }
@@ -47,11 +48,11 @@ export default function PINEntryScreen({ navigation, route }) {
     <View style={styles.container}>
       <Surface style={styles.content}>
         <Text variant="headlineMedium" style={styles.title}>
-          Enter PIN
+          {t('pinEntry.title')}
         </Text>
 
         <Text variant="bodyMedium" style={styles.instruction}>
-          Enter your 4-digit PIN to access parent settings
+          {t('pinEntry.instruction')}
         </Text>
 
         <View style={styles.pinContainer}>
@@ -74,12 +75,12 @@ export default function PINEntryScreen({ navigation, route }) {
           style={styles.cancelButton}
           disabled={loading}
         >
-          Cancel
+          {t('common.cancel')}
         </Button>
 
         <View style={styles.helpContainer}>
           <Text variant="bodySmall" style={styles.helpText}>
-            Forgot your PIN? You'll need to reinstall the app and set it up again.
+            {t('pinEntry.helpText')}
           </Text>
         </View>
       </Surface>

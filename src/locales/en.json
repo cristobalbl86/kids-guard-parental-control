@@ -1,0 +1,105 @@
+{
+  "common": {
+    "yes": "Yes",
+    "no": "No",
+    "cancel": "Cancel",
+    "verify": "Verify",
+    "save": "Save",
+    "back": "Back",
+    "locked": "Locked",
+    "unlocked": "Unlocked",
+    "volume": "Volume",
+    "brightness": "Brightness",
+    "percent": "%",
+    "loading": "Loading settings..."
+  },
+  "welcome": {
+    "title": "Welcome to Kids guard",
+    "subtitle": "A tool to help parents manage device settings",
+    "question": "Are you a parent?",
+    "footer": "Parents will need to verify their identity to continue",
+    "childAlert": "This app requires parent setup. Please ask a parent to set up the app."
+  },
+  "parentVerification": {
+    "title": "Parent Verification",
+    "instruction": "To verify you're a parent, please solve this simple math problem:",
+    "mathProblem": "{{num1}} + {{num2}} = ?",
+    "answerLabel": "Your Answer",
+    "errorIncorrect": "Incorrect answer. Please try again.",
+    "newProblemButton": "Generate New Problem",
+    "note": "Note: This verification ensures only adults can set up parental controls."
+  },
+  "setupPIN": {
+    "titleCreate": "Set Your PIN",
+    "titleConfirm": "Confirm Your PIN",
+    "instructionCreate": "Create a 4-digit PIN to protect parent settings",
+    "instructionConfirm": "Re-enter your PIN to confirm",
+    "errorMismatch": "PINs do not match. Please try again.",
+    "errorSave": "Failed to save PIN. Please try again.",
+    "startOver": "Start Over",
+    "tipsTitle": "PIN Tips:",
+    "tip1": "Choose a PIN that's easy for you to remember",
+    "tip2": "Don't use obvious combinations like 1234 or 0000",
+    "tip3": "Keep your PIN secure and don't share it"
+  },
+  "pinEntry": {
+    "title": "Enter PIN",
+    "instruction": "Enter your 4-digit PIN to access parent settings",
+    "errorIncorrect": "Incorrect PIN. Please try again.",
+    "errorGeneric": "An error occurred. Please try again.",
+    "helpText": "Forgot your PIN? You'll need to reinstall the app and set it up again."
+  },
+  "home": {
+    "headerTitle": "Device Settings Status",
+    "headerSubtitle": "Pull down to refresh",
+    "lockedMessage": "This setting is controlled by a parent",
+    "infoTitle": "About This App",
+    "infoText": "This app helps parents manage device settings. When a setting is locked, only a parent with the PIN can change it.",
+    "parentSettingsButton": "Parent Settings"
+  },
+  "parentSettings": {
+    "headerTitle": "Parental Controls",
+    "headerSubtitle": "Manage device settings for your child",
+    "lockLabel": "{{status}}",
+    "applyButton": "Apply {{setting}}",
+    "minLabel": "Min: 0%",
+    "maxLabel": "Max: 100%",
+    "lockedNotice": "This setting is locked. Children cannot change it.",
+    "placeholderNotice": "No saved value yet. Adjust the control and apply or lock to store it.",
+    "securityTitle": "Security",
+    "changePinButton": "Change PIN",
+    "warningTitle": "Important Notes",
+    "warning1": "Locked settings will be enforced while the app runs",
+    "warning2": "Children may still change settings through device controls",
+    "warning3": "The app will attempt to restore your settings when changes are detected",
+    "warning4": "For best results, keep the app running in the background",
+    "successVolumeLocked": "Volume locked at {{value}}%",
+    "successVolumeUnlocked": "Volume unlocked - child can adjust freely",
+    "successVolumeSet": "Volume set to {{value}}%",
+    "successBrightnessLocked": "Brightness locked at {{value}}%",
+    "successBrightnessUnlocked": "Brightness unlocked - child can adjust freely",
+    "successBrightnessSet": "Brightness set to {{value}}%",
+    "errorUpdate": "Failed to update {{setting}} settings",
+    "errorSave": "Failed to save {{setting}} setting",
+    "permissionTitle": "Permission Required",
+    "permissionMessage": "To control system brightness, this app needs permission to modify system settings. Please grant this permission in the next screen.",
+    "permissionButton": "Open Settings",
+    "permissionSuccess": "Brightness permission granted. Settings have been applied."
+  },
+  "pinChange": {
+    "titleCurrent": "Enter Current PIN",
+    "titleNew": "Enter New PIN",
+    "titleConfirm": "Confirm New PIN",
+    "instructionCurrent": "Enter your current PIN to continue",
+    "instructionNew": "Enter a new 4-digit PIN",
+    "instructionConfirm": "Re-enter your new PIN to confirm",
+    "errorSame": "New PIN must be different from current PIN",
+    "errorMismatch": "PINs do not match",
+    "errorFailed": "Failed to change PIN",
+    "successMessage": "PIN changed successfully"
+  },
+  "alerts": {
+    "success": "Success",
+    "error": "Error"
+  }
+}

@@ -2,22 +2,23 @@ import React from 'react';
 import { View, StyleSheet, Image } from 'react-native';
 import { Button, Text, Surface } from 'react-native-paper';
 import { theme } from '../utils/theme';
+import { t } from '../utils/i18n';
 
 export default function WelcomeScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <Surface style={styles.content}>
         <Text variant="headlineLarge" style={styles.title}>
-          Welcome to Kids guard
+          {t('welcome.title')}
         </Text>
 
         <Text variant="bodyLarge" style={styles.subtitle}>
-          A tool to help parents manage device settings
+          {t('welcome.subtitle')}
         </Text>
 
         <View style={styles.questionContainer}>
           <Text variant="headlineMedium" style={styles.question}>
-            Are you a parent?
+            {t('welcome.question')}
           </Text>
 
           <View style={styles.buttonContainer}>
@@ -27,25 +28,25 @@ export default function WelcomeScreen({ navigation }) {
               style={styles.yesButton}
               labelStyle={styles.buttonLabel}
             >
-              Yes
+              {t('common.yes')}
             </Button>
 
             <Button
               mode="outlined"
               onPress={() => {
                 // Child selected - show message
-                alert('This app requires parent setup. Please ask a parent to set up the app.');
+                alert(t('welcome.childAlert'));
               }}
               style={styles.noButton}
               labelStyle={styles.buttonLabel}
             >
-              No
+              {t('common.no')}
             </Button>
           </View>
         </View>
 
         <Text variant="bodySmall" style={styles.footer}>
-          Parents will need to verify their identity to continue
+          {t('welcome.footer')}
         </Text>
       </Surface>
     </View>

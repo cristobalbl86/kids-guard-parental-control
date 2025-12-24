@@ -4,6 +4,7 @@ import { Dialog, Portal, Button, Text, HelperText } from 'react-native-paper';
 import { theme } from '../utils/theme';
 import { changePIN } from '../utils/storage';
 import PINInput from './PINInput';
+import { t } from '../utils/i18n';
 
 export default function PINChangeDialog({ visible, onDismiss, onSuccess }) {
   const [step, setStep] = useState(1); // 1 = current PIN, 2 = new PIN, 3 = confirm new PIN
@@ -37,7 +38,7 @@ export default function PINChangeDialog({ visible, onDismiss, onSuccess }) {
     } else if (step === 2) {
       // New PIN entered
       if (enteredPIN === currentPIN) {
-        setError('New PIN must be different from current PIN');
+        setError(t('pinChange.errorSame'));
         setNewPIN('');
         return;
       }
@@ -46,7 +47,7 @@ export default function PINChangeDialog({ visible, onDismiss, onSuccess }) {
     } else if (step === 3) {
       // Confirm new PIN
       if (enteredPIN !== newPIN) {
-        setError('PINs do not match');
+        setError(t('pinChange.errorMismatch'));
         setConfirmPIN('');
         setTimeout(() => {
           setStep(2);
@@ -63,7 +64,7 @@ export default function PINChangeDialog({ visible, onDismiss, onSuccess }) {
         onSuccess();
         handleReset();
       } catch (error) {
-        setError(error.message || 'Failed to change PIN');
+        setError(error.message || t('pinChange.errorFailed'));
         setLoading(false);
         setTimeout(() => {
           handleReset();
@@ -75,11 +76,11 @@ export default function PINChangeDialog({ visible, onDismiss, onSuccess }) {
   const getTitle = () => {
     switch (step) {
       case 1:
-        return 'Enter Current PIN';
+        return t('pinChange.titleCurrent');
       case 2:
-        return 'Enter New PIN';
+        return t('pinChange.titleNew');
       case 3:
-        return 'Confirm New PIN';
+        return t('pinChange.titleConfirm');
       default:
         return '';
     }
@@ -88,11 +89,11 @@ export default function PINChangeDialog({ visible, onDismiss, onSuccess }) {
   const getInstruction = () => {
     switch (step) {
       case 1:
-        return 'Enter your current PIN to continue';
+        return t('pinChange.instructionCurrent');
       case 2:
-        return 'Enter a new 4-digit PIN';
+        return t('pinChange.instructionNew');
       case 3:
-        return 'Re-enter your new PIN to confirm';
+        return t('pinChange.instructionConfirm');
       default:
         return '';
     }
@@ -155,7 +156,7 @@ export default function PINChangeDialog({ visible, onDismiss, onSuccess }) {
         </Dialog.Content>
         <Dialog.Actions>
           <Button onPress={handleDismiss} disabled={loading}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           {step > 1 && (
             <Button
@@ -165,7 +166,7 @@ export default function PINChangeDialog({ visible, onDismiss, onSuccess }) {
               }}
               disabled={loading}
             >
-              Back
+              {t('common.back')}
             </Button>
           )}
         </Dialog.Actions>

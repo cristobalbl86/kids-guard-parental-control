@@ -10,7 +10,8 @@
       "Bash(npm run android:*)",
       "Bash(curl:*)",
       "Bash(move comfamilyhelperrn*.java comkidsguard )",
-      "Bash(move comfamilyhelperrn*.kt comkidsguard)"
+      "Bash(move comfamilyhelperrn*.kt comkidsguard)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []
