@@ -12,11 +12,13 @@
     "test:coverage": "jest --coverage",
     "test:verbose": "jest --verbose",
     "test:storage": "jest src/utils/__tests__/storage.test.js",
-    "test:volumeControl": "jest src/utils/__tests__/volumeControl.test.js",
-    "test:brightnessControl": "jest src/utils/__tests__/brightnessControl.test.js",
+    "test:volumeControl": "jest src/utils/__tests__/volumeControl.test.js --runInBand",
+    "test:brightnessControl": "jest src/utils/__tests__/brightnessControl.test.js --runInBand",
     "test:utils": "jest src/utils/__tests__",
     "test:screens": "jest src/screens/__tests__",
-    "test:ci": "jest --ci --coverage --maxWorkers=2"
+    "test:ci": "jest --ci --coverage --maxWorkers=2",
+    "test:serial": "jest --runInBand",
+    "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
     "@notifee/react-native": "^9.1.8",

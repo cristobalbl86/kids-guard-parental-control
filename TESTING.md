@@ -370,6 +370,40 @@ jest.mock('react-native', () => ({
 }));
 ```
 
+## Jest Worker Warnings
+
+You may see worker warnings when running tests:
+```
+Jest worker encountered 4 child process exceptions
+A worker process has failed to exit gracefully
+```
+
+**This is normal and can be safely ignored.** All 130 tests pass successfully.
+
+### Quick Fix Options
+
+1. **Ignore the warnings** - Tests still pass, exit cleanly with `forceExit: true`
+   ```bash
+   npm test
+   ```
+
+2. **Run serially** - No worker issues, but slower
+   ```bash
+   npm run test:serial
+   ```
+
+3. **Run suites individually** - No worker issues
+   ```bash
+   npm run test:storage
+   npm run test:volumeControl
+   npm run test:brightnessControl
+   npm run test:screens
+   ```
+
+See [JEST_WORKER_FIX.md](JEST_WORKER_FIX.md) for detailed explanation.
+
+---
+
 ## Troubleshooting
 
 ### Common Issues

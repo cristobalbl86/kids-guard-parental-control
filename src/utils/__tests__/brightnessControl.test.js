@@ -32,6 +32,12 @@ describe('Brightness Control Utility', () => {
     AsyncStorage.setItem.mockResolvedValue();
   });
 
+  afterAll(() => {
+    // Clean up any pending timers or async operations
+    jest.clearAllTimers();
+    jest.clearAllMocks();
+  });
+
   describe('initializeBrightnessControl', () => {
     it('should initialize successfully with default settings', async () => {
       await jest.isolateModules(async () => {

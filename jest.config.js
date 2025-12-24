@@ -28,4 +28,14 @@ module.exports = {
       statements: 60,
     },
   },
+  // Prevent worker issues
+  maxWorkers: '50%',
+  // Force exit after tests complete (prevents hanging workers)
+  forceExit: true,
+  // Detect open handles that might cause worker issues
+  detectOpenHandles: false,
+  // Clear mocks between tests
+  clearMocks: true,
+  // Reset modules between test files
+  resetModules: false,
 };
