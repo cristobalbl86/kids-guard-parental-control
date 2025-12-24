@@ -5,6 +5,7 @@ import { theme, statusColors } from '../utils/theme';
 import { getAllSettings } from '../utils/storage';
 import { initializeVolumeControl, isVolumeMonitoring } from '../utils/volumeControl';
 import { initializeBrightnessControl, isBrightnessMonitoring } from '../utils/brightnessControl';
+import { t } from '../utils/i18n';
 
 export default function HomeScreen({ navigation }) {
   const [settings, setSettings] = useState({
@@ -69,7 +70,7 @@ export default function HomeScreen({ navigation }) {
                 iconColor={statusStyle.icon}
               />
               <Text style={[styles.statusText, { color: statusStyle.text }]}>
-                {isLocked ? 'Locked' : 'Unlocked'}
+                {isLocked ? t('common.locked') : t('common.unlocked')}
               </Text>
             </View>
           </View>
@@ -85,7 +86,7 @@ export default function HomeScreen({ navigation }) {
 
           {isLocked && (
             <Text variant="bodySmall" style={styles.lockedMessage}>
-              This setting is controlled by a parent
+              {t('home.lockedMessage')}
             </Text>
           )}
         </Card.Content>
@@ -104,27 +105,27 @@ export default function HomeScreen({ navigation }) {
       >
         <View style={styles.header}>
           <Text variant="headlineSmall" style={styles.headerTitle}>
-            Device Settings Status
+            {t('home.headerTitle')}
           </Text>
           <Text variant="bodyMedium" style={styles.headerSubtitle}>
-            Pull down to refresh
+            {t('home.headerSubtitle')}
           </Text>
         </View>
 
         {renderStatusCard(
-          'Volume',
+          t('common.volume'),
           'volume-high',
           settings.volume.locked,
           settings.volume.volume,
-          '%'
+          t('common.percent')
         )}
 
         {renderStatusCard(
-          'Brightness',
+          t('common.brightness'),
           'brightness-6',
           settings.brightness.locked,
           settings.brightness.brightness,
-          '%'
+          t('common.percent')
         )}
 
         <Card style={styles.infoCard}>
@@ -132,12 +133,11 @@ export default function HomeScreen({ navigation }) {
             <View style={styles.infoHeader}>
               <IconButton icon="information" size={24} iconColor={theme.colors.primary} />
               <Text variant="titleMedium" style={styles.infoTitle}>
-                About This App
+                {t('home.infoTitle')}
               </Text>
             </View>
             <Text variant="bodyMedium" style={styles.infoText}>
-              This app helps parents manage device settings. When a setting is locked,
-              only a parent with the PIN can change it.
+              {t('home.infoText')}
             </Text>
           </Card.Content>
         </Card>
@@ -150,7 +150,7 @@ export default function HomeScreen({ navigation }) {
           style={styles.settingsButton}
           icon="cog"
         >
-          Parent Settings
+          {t('home.parentSettingsButton')}
         </Button>
       </View>
     </View>

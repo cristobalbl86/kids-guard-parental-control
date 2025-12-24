@@ -1,0 +1,105 @@
+{
+  "common": {
+    "yes": "Sí",
+    "no": "No",
+    "cancel": "Cancelar",
+    "verify": "Verificar",
+    "save": "Guardar",
+    "back": "Atrás",
+    "locked": "Bloqueado",
+    "unlocked": "Desbloqueado",
+    "volume": "Volumen",
+    "brightness": "Brillo",
+    "percent": "%",
+    "loading": "Cargando configuración..."
+  },
+  "welcome": {
+    "title": "Bienvenido a Kids guard",
+    "subtitle": "Una herramienta para ayudar a los padres a gestionar la configuración del dispositivo",
+    "question": "¿Eres padre o madre?",
+    "footer": "Los padres deberán verificar su identidad para continuar",
+    "childAlert": "Esta aplicación requiere configuración por parte de un padre. Por favor, pide a un padre que configure la aplicación."
+  },
+  "parentVerification": {
+    "title": "Verificación de Padres",
+    "instruction": "Para verificar que eres padre/madre, por favor resuelve este simple problema matemático:",
+    "mathProblem": "{{num1}} + {{num2}} = ?",
+    "answerLabel": "Tu Respuesta",
+    "errorIncorrect": "Respuesta incorrecta. Por favor, intenta de nuevo.",
+    "newProblemButton": "Generar Nuevo Problema",
+    "note": "Nota: Esta verificación asegura que solo los adultos puedan configurar el control parental."
+  },
+  "setupPIN": {
+    "titleCreate": "Establece tu PIN",
+    "titleConfirm": "Confirma tu PIN",
+    "instructionCreate": "Crea un PIN de 4 dígitos para proteger la configuración parental",
+    "instructionConfirm": "Vuelve a ingresar tu PIN para confirmar",
+    "errorMismatch": "Los PIN no coinciden. Por favor, intenta de nuevo.",
+    "errorSave": "Error al guardar el PIN. Por favor, intenta de nuevo.",
+    "startOver": "Comenzar de Nuevo",
+    "tipsTitle": "Consejos para el PIN:",
+    "tip1": "Elige un PIN que sea fácil de recordar para ti",
+    "tip2": "No uses combinaciones obvias como 1234 o 0000",
+    "tip3": "Mantén tu PIN seguro y no lo compartas"
+  },
+  "pinEntry": {
+    "title": "Ingresar PIN",
+    "instruction": "Ingresa tu PIN de 4 dígitos para acceder a la configuración parental",
+    "errorIncorrect": "PIN incorrecto. Por favor, intenta de nuevo.",
+    "errorGeneric": "Ocurrió un error. Por favor, intenta de nuevo.",
+    "helpText": "¿Olvidaste tu PIN? Necesitarás reinstalar la aplicación y configurarla nuevamente."
+  },
+  "home": {
+    "headerTitle": "Estado de Configuración del Dispositivo",
+    "headerSubtitle": "Desliza hacia abajo para actualizar",
+    "lockedMessage": "Esta configuración está controlada por un padre",
+    "infoTitle": "Acerca de Esta Aplicación",
+    "infoText": "Esta aplicación ayuda a los padres a gestionar la configuración del dispositivo. Cuando una configuración está bloqueada, solo un padre con el PIN puede cambiarla.",
+    "parentSettingsButton": "Configuración de Padres"
+  },
+  "parentSettings": {
+    "headerTitle": "Control Parental",
+    "headerSubtitle": "Gestiona la configuración del dispositivo para tu hijo",
+    "lockLabel": "{{status}}",
+    "applyButton": "Aplicar {{setting}}",
+    "minLabel": "Mín: 0%",
+    "maxLabel": "Máx: 100%",
+    "lockedNotice": "Esta configuración está bloqueada. Los niños no pueden cambiarla.",
+    "placeholderNotice": "Aún no hay valor guardado. Ajusta el control y aplica o bloquea para almacenarlo.",
+    "securityTitle": "Seguridad",
+    "changePinButton": "Cambiar PIN",
+    "warningTitle": "Notas Importantes",
+    "warning1": "Las configuraciones bloqueadas se aplicarán mientras la aplicación esté en ejecución",
+    "warning2": "Los niños aún pueden cambiar configuraciones a través de los controles del dispositivo",
+    "warning3": "La aplicación intentará restaurar tus configuraciones cuando se detecten cambios",
+    "warning4": "Para mejores resultados, mantén la aplicación en ejecución en segundo plano",
+    "successVolumeLocked": "Volumen bloqueado en {{value}}%",
+    "successVolumeUnlocked": "Volumen desbloqueado - el niño puede ajustarlo libremente",
+    "successVolumeSet": "Volumen establecido en {{value}}%",
+    "successBrightnessLocked": "Brillo bloqueado en {{value}}%",
+    "successBrightnessUnlocked": "Brillo desbloqueado - el niño puede ajustarlo libremente",
+    "successBrightnessSet": "Brillo establecido en {{value}}%",
+    "errorUpdate": "Error al actualizar la configuración de {{setting}}",
+    "errorSave": "Error al guardar la configuración de {{setting}}",
+    "permissionTitle": "Permiso Requerido",
+    "permissionMessage": "Para controlar el brillo del sistema, esta aplicación necesita permiso para modificar la configuración del sistema. Por favor, otorga este permiso en la siguiente pantalla.",
+    "permissionButton": "Abrir Configuración",
+    "permissionSuccess": "Permiso de brillo otorgado. La configuración ha sido aplicada."
+  },
+  "pinChange": {
+    "titleCurrent": "Ingresar PIN Actual",
+    "titleNew": "Ingresar Nuevo PIN",
+    "titleConfirm": "Confirmar Nuevo PIN",
+    "instructionCurrent": "Ingresa tu PIN actual para continuar",
+    "instructionNew": "Ingresa un nuevo PIN de 4 dígitos",
+    "instructionConfirm": "Vuelve a ingresar tu nuevo PIN para confirmar",
+    "errorSame": "El nuevo PIN debe ser diferente del PIN actual",
+    "errorMismatch": "Los PIN no coinciden",
+    "errorFailed": "Error al cambiar el PIN",
+    "successMessage": "PIN cambiado exitosamente"
+  },
+  "alerts": {
+    "success": "Éxito",
+    "error": "Error"
+  }
+}

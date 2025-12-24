@@ -6,6 +6,7 @@ import { getAllSettings, changePIN } from '../utils/storage';
 import { updateVolumeSettings, getVolume } from '../utils/volumeControl';
 import { updateBrightnessSettings, getBrightness, checkWriteSettingsPermission, requestWriteSettingsPermission } from '../utils/brightnessControl';
 import PINChangeDialog from '../components/PINChangeDialog';
+import { t } from '../utils/i18n';
 
 export default function ParentSettingsScreen({ navigation }) {
   const [volumeValue, setVolumeValue] = useState(50);
@@ -48,12 +49,12 @@ export default function ParentSettingsScreen({ navigation }) {
       const hasPermission = await checkWriteSettingsPermission();
       if (!hasPermission) {
         Alert.alert(
-          'Permission Required',
-          'To control system brightness, this app needs permission to modify system settings. Please grant this permission in the next screen.',
+          t('parentSettings.permissionTitle'),
+          t('parentSettings.permissionMessage'),
           [
-            { text: 'Cancel', style: 'cancel' },
+            { text: t('common.cancel'), style: 'cancel' },
             {
-              text: 'Open Settings',
+              text: t('parentSettings.permissionButton'),
               onPress: async () => {
                 await requestWriteSettingsPermission();
                 // After opening settings, wait and check if permission was granted
@@ -63,7 +64,7 @@ export default function ParentSettingsScreen({ navigation }) {
                     // Re-apply brightness if it was locked
                     const { setBrightness } = require('../utils/brightnessControl');
                     await setBrightness(brightnessValue);
-                    Alert.alert('Success', 'Brightness permission granted. Settings have been applied.');
+                    Alert.alert(t('alerts.success'), t('parentSettings.permissionSuccess'));
                   }
                 }, 2000);
               },
@@ -133,7 +134,7 @@ export default function ParentSettingsScreen({ navigation }) {
       }
     } catch (error) {
       console.error('Error loading settings:', error);
-      Alert.alert('Error', 'Failed to load settings');
+      Alert.alert(t('alerts.error'), 'Failed to load settings');
     } finally {
       setIsLoadingSettings(false);
     }
@@ -162,13 +163,13 @@ export default function ParentSettingsScreen({ navigation }) {
     if (success) {
       setVolumeConfigured(true);
       Alert.alert(
-        'Success',
+        t('alerts.success'),
         newLocked
-          ? `Volume locked at ${volumeValue}%`
-          : 'Volume unlocked - child can adjust freely'
+          ? t('parentSettings.successVolumeLocked', { value: volumeValue })
+          : t('parentSettings.successVolumeUnlocked')
       );
     } else {
-      Alert.alert('Error', 'Failed to update volume settings');
+      Alert.alert(t('alerts.error'), t('parentSettings.errorUpdate', { setting: t('common.volume') }));
       setVolumeLocked(!newLocked); // Revert on failure
     }
   };
@@ -188,9 +189,9 @@ export default function ParentSettingsScreen({ navigation }) {
 
     if (success) {
       setVolumeConfigured(true);
-      Alert.alert('Success', `Volume set to ${volumeValue}%`);
+      Alert.alert(t('alerts.success'), t('parentSettings.successVolumeSet', { value: volumeValue }));
     } else {
-      Alert.alert('Error', 'Failed to save volume setting');
+      Alert.alert(t('alerts.error'), t('parentSettings.errorSave', { setting: t('common.volume') }));
     }
   };
 
@@ -217,13 +218,13 @@ export default function ParentSettingsScreen({ navigation }) {
     if (success) {
       setBrightnessConfigured(true);
       Alert.alert(
-        'Success',
+        t('alerts.success'),
         newLocked
-          ? `Brightness locked at ${brightnessValue}%`
-          : 'Brightness unlocked - child can adjust freely'
+          ? t('parentSettings.successBrightnessLocked', { value: brightnessValue })
+          : t('parentSettings.successBrightnessUnlocked')
       );
     } else {
-      Alert.alert('Error', 'Failed to update brightness settings');
+      Alert.alert(t('alerts.error'), t('parentSettings.errorUpdate', { setting: t('common.brightness') }));
       setBrightnessLocked(!newLocked); // Revert on failure
     }
   };
@@ -243,9 +244,9 @@ export default function ParentSettingsScreen({ navigation }) {
 
     if (success) {
       setBrightnessConfigured(true);
-      Alert.alert('Success', `Brightness set to ${brightnessValue}%`);
+      Alert.alert(t('alerts.success'), t('parentSettings.successBrightnessSet', { value: brightnessValue }));
     } else {
-      Alert.alert('Error', 'Failed to save brightness setting');
+      Alert.alert(t('alerts.error'), t('parentSettings.errorSave', { setting: t('common.brightness') }));
     }
   };
 
@@ -255,7 +256,7 @@ export default function ParentSettingsScreen({ navigation }) {
 
   const handlePINChanged = () => {
     setShowPINDialog(false);
-    Alert.alert('Success', 'PIN changed successfully');
+    Alert.alert(t('alerts.success'), t('pinChange.successMessage'));
   };
 
   const renderControlCard = (
@@ -283,7 +284,7 @@ export default function ParentSettingsScreen({ navigation }) {
 
             <View style={styles.lockSwitch}>
               <Text variant="bodyMedium" style={styles.lockLabel}>
-                {locked ? 'Locked' : 'Unlocked'}
+                {locked ? t('common.locked') : t('common.unlocked')}
               </Text>
               <Switch
                 value={locked}
@@ -340,10 +341,10 @@ export default function ParentSettingsScreen({ navigation }) {
             
             <View style={styles.rangeLabels}>
               <Text variant="bodySmall" style={styles.rangeLabel}>
-                Min: 0%
+                {t('parentSettings.minLabel')}
               </Text>
               <Text variant="bodySmall" style={styles.rangeLabel}>
-                Max: 100%
+                {t('parentSettings.maxLabel')}
               </Text>
             </View>
           </View>
@@ -355,21 +356,21 @@ export default function ParentSettingsScreen({ navigation }) {
             disabled={saving}
             loading={saving}
           >
-            Apply {title}
+            {t('parentSettings.applyButton', { setting: title })}
           </Button>
 
           {locked && (
             <View style={styles.lockedNotice}>
               <IconButton icon="information" size={16} iconColor={statusStyle.icon} />
               <Text variant="bodySmall" style={styles.lockedNoticeText}>
-                This setting is locked. Children cannot change it.
+                {t('parentSettings.lockedNotice')}
               </Text>
             </View>
           )}
 
           {!isConfigured && (
             <Text variant="bodySmall" style={styles.placeholderNotice}>
-              No saved value yet. Adjust the control and apply or lock to store it.
+              {t('parentSettings.placeholderNotice')}
             </Text>
           )}
         </Card.Content>
@@ -382,7 +383,7 @@ export default function ParentSettingsScreen({ navigation }) {
       <View style={[styles.container, styles.loadingContainer]}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
         <Text variant="bodyLarge" style={styles.loadingText}>
-          Loading settings...
+          {t('common.loading')}
         </Text>
       </View>
     );
@@ -397,15 +398,15 @@ export default function ParentSettingsScreen({ navigation }) {
       >
         <View style={styles.header}>
           <Text variant="headlineSmall" style={styles.headerTitle}>
-            Parental Controls
+            {t('parentSettings.headerTitle')}
           </Text>
           <Text variant="bodyMedium" style={styles.headerSubtitle}>
-            Manage device settings for your child
+            {t('parentSettings.headerSubtitle')}
           </Text>
         </View>
 
         {renderControlCard(
-          'Volume',
+          t('common.volume'),
           'volume-high',
           volumeValue,
           volumeLocked,
@@ -416,7 +417,7 @@ export default function ParentSettingsScreen({ navigation }) {
         )}
 
         {renderControlCard(
-          'Brightness',
+          t('common.brightness'),
           'brightness-6',
           brightnessValue,
           brightnessLocked,
@@ -431,7 +432,7 @@ export default function ParentSettingsScreen({ navigation }) {
             <View style={styles.pinHeader}>
               <IconButton icon="lock-reset" size={24} iconColor={theme.colors.primary} />
               <Text variant="titleMedium" style={styles.pinTitle}>
-                Security
+                {t('parentSettings.securityTitle')}
               </Text>
             </View>
 
@@ -441,7 +442,7 @@ export default function ParentSettingsScreen({ navigation }) {
               icon="key-change"
               style={styles.changePinButton}
             >
-              Change PIN
+              {t('parentSettings.changePinButton')}
             </Button>
           </Card.Content>
         </Card>
@@ -451,21 +452,21 @@ export default function ParentSettingsScreen({ navigation }) {
             <View style={styles.warningHeader}>
               <IconButton icon="alert" size={24} iconColor={theme.colors.warning} />
               <Text variant="titleMedium" style={styles.warningTitle}>
-                Important Notes
+                {t('parentSettings.warningTitle')}
               </Text>
             </View>
 
             <Text variant="bodySmall" style={styles.warningText}>
-              • Locked settings will be enforced while the app runs
+              • {t('parentSettings.warning1')}
             </Text>
             <Text variant="bodySmall" style={styles.warningText}>
-              • Children may still change settings through device controls
+              • {t('parentSettings.warning2')}
             </Text>
             <Text variant="bodySmall" style={styles.warningText}>
-              • The app will attempt to restore your settings when changes are detected
+              • {t('parentSettings.warning3')}
             </Text>
             <Text variant="bodySmall" style={styles.warningText}>
-              • For best results, keep the app running in the background
+              • {t('parentSettings.warning4')}
             </Text>
           </Card.Content>
         </Card>
