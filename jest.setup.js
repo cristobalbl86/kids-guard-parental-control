@@ -139,6 +139,18 @@ jest.mock('react-native-paper', () => {
     ActivityIndicator: ({ size, color, ...props }) => {
       return React.createElement(RN.ActivityIndicator, { size, color, testID: 'activity-indicator', ...props });
     },
+    Portal: ({ children }) => children,
+    Dialog: Object.assign(
+      ({ children, visible, onDismiss, dismissable, ...props }) => {
+        if (!visible) return null;
+        return React.createElement(RN.View, { testID: 'dialog', ...props }, children);
+      },
+      {
+        Title: ({ children, ...props }) => React.createElement(RN.Text, { testID: 'dialog-title', ...props }, children),
+        Content: ({ children, ...props }) => React.createElement(RN.View, { testID: 'dialog-content', ...props }, children),
+        Actions: ({ children, ...props }) => React.createElement(RN.View, { testID: 'dialog-actions', ...props }, children),
+      }
+    ),
   };
 });
 

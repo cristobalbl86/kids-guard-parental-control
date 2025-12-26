@@ -1,5 +1,13 @@
 import { NativeModules, NativeEventEmitter } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Mock storage module BEFORE importing volumeControl
+jest.mock('../storage', () => ({
+  getVolumeSettings: jest.fn(),
+  saveVolumeSettings: jest.fn(),
+  getBrightnessSettings: jest.fn(),
+  saveBrightnessSettings: jest.fn(),
+}));
+
 import {
   initializeVolumeControl,
   setVolume,
@@ -12,6 +20,7 @@ import {
   addVolumeEnforcementListener,
   removeVolumeEnforcementListener,
 } from '../volumeControl';
+import * as storage from '../storage';
 
 // Get mocked module
 const { VolumeControl } = NativeModules;
@@ -21,14 +30,16 @@ describe('Volume Control Utility', () => {
     // Clear all mocks before each test
     jest.clearAllMocks();
 
-    // Reset mock implementations
+    // Reset mock implementations for native module
     VolumeControl.setVolume.mockResolvedValue();
     VolumeControl.getVolume.mockResolvedValue(50);
     VolumeControl.startEnforcing.mockResolvedValue();
     VolumeControl.stopEnforcing.mockResolvedValue();
     VolumeControl.isEnforcingVolume.mockResolvedValue(false);
-    AsyncStorage.getItem.mockResolvedValue(null);
-    AsyncStorage.setItem.mockResolvedValue();
+
+    // Reset mock implementations for storage functions
+    storage.getVolumeSettings.mockResolvedValue({ volume: 50, locked: false });
+    storage.saveVolumeSettings.mockResolvedValue();
   });
 
   afterAll(() => {
@@ -40,22 +51,21 @@ describe('Volume Control Utility', () => {
   describe('initializeVolumeControl', () => {
     it('should initialize successfully with default settings', async () => {
       await jest.isolateModules(async () => {
-        AsyncStorage.getItem.mockResolvedValue(
-          JSON.stringify({ volume: 50, locked: false })
-        );
+        const mockStorage = require('../storage');
+        mockStorage.getVolumeSettings.mockResolvedValue({ volume: 50, locked: false });
 
         const { initializeVolumeControl: init } = require('../volumeControl');
         const result = await init();
 
         expect(result).toBe(true);
+        expect(mockStorage.getVolumeSettings).toHaveBeenCalled();
       });
     });
 
     it('should start monitoring if settings are locked', async () => {
       await jest.isolateModules(async () => {
-        AsyncStorage.getItem.mockResolvedValue(
-          JSON.stringify({ volume: 75, locked: true })
-        );
+        const mockStorage = require('../storage');
+        mockStorage.getVolumeSettings.mockResolvedValue({ volume: 75, locked: true });
 
         const { initializeVolumeControl: init } = require('../volumeControl');
         await init();
@@ -66,9 +76,8 @@ describe('Volume Control Utility', () => {
 
     it('should not start monitoring if settings are unlocked', async () => {
       await jest.isolateModules(async () => {
-        AsyncStorage.getItem.mockResolvedValue(
-          JSON.stringify({ volume: 50, locked: false })
-        );
+        const mockStorage = require('../storage');
+        mockStorage.getVolumeSettings.mockResolvedValue({ volume: 50, locked: false });
 
         const { initializeVolumeControl: init } = require('../volumeControl');
         await init();
@@ -79,7 +88,8 @@ describe('Volume Control Utility', () => {
 
     it('should return false on initialization error', async () => {
       await jest.isolateModules(async () => {
-        AsyncStorage.getItem.mockRejectedValue(new Error('Storage error'));
+        const mockStorage = require('../storage');
+        mockStorage.getVolumeSettings.mockRejectedValue(new Error('Storage error'));
 
         const { initializeVolumeControl: init } = require('../volumeControl');
         const result = await init();
@@ -90,9 +100,8 @@ describe('Volume Control Utility', () => {
 
     it('should skip initialization if already initialized', async () => {
       await jest.isolateModules(async () => {
-        AsyncStorage.getItem.mockResolvedValue(
-          JSON.stringify({ volume: 50, locked: false })
-        );
+        const mockStorage = require('../storage');
+        mockStorage.getVolumeSettings.mockResolvedValue({ volume: 50, locked: false });
 
         const { initializeVolumeControl: init } = require('../volumeControl');
         await init();
@@ -100,8 +109,8 @@ describe('Volume Control Utility', () => {
 
         await init();
 
-        // Should not call AsyncStorage again
-        expect(AsyncStorage.getItem).not.toHaveBeenCalled();
+        // Should not call getVolumeSettings again
+        expect(mockStorage.getVolumeSettings).not.toHaveBeenCalled();
       });
     });
   });
@@ -235,10 +244,7 @@ describe('Volume Control Utility', () => {
     it('should save settings and start monitoring when locked', async () => {
       const result = await updateVolumeSettings(70, true);
 
-      expect(AsyncStorage.setItem).toHaveBeenCalledWith(
-        'volume_settings',
-        JSON.stringify({ volume: 70, locked: true })
-      );
+      expect(storage.saveVolumeSettings).toHaveBeenCalledWith({ volume: 70, locked: true });
       expect(VolumeControl.startEnforcing).toHaveBeenCalledWith(70);
       expect(result).toBe(true);
     });
@@ -246,16 +252,13 @@ describe('Volume Control Utility', () => {
     it('should save settings and stop monitoring when unlocked', async () => {
       const result = await updateVolumeSettings(60, false);
 
-      expect(AsyncStorage.setItem).toHaveBeenCalledWith(
-        'volume_settings',
-        JSON.stringify({ volume: 60, locked: false })
-      );
+      expect(storage.saveVolumeSettings).toHaveBeenCalledWith({ volume: 60, locked: false });
       expect(VolumeControl.stopEnforcing).toHaveBeenCalled();
       expect(result).toBe(true);
     });
 
     it('should return false on storage error', async () => {
-      AsyncStorage.setItem.mockRejectedValue(new Error('Storage error'));
+      storage.saveVolumeSettings.mockRejectedValue(new Error('Storage error'));
 
       const result = await updateVolumeSettings(70, true);
 
