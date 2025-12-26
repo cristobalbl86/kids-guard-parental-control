@@ -11,7 +11,13 @@
       "Bash(curl:*)",
       "Bash(move comfamilyhelperrn*.java comkidsguard )",
       "Bash(move comfamilyhelperrn*.kt comkidsguard)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run test:serial:*)",
+      "Bash(npm run test:storage:*)",
+      "Bash(npm run test:screens:*)",
+      "Bash(npm run test:ci:*)",
+      "Bash(findstr:*)"
     ],
     "deny": [],
     "ask": []

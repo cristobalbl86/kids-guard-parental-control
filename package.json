@@ -7,7 +7,18 @@
     "ios": "react-native run-ios",
     "lint": "eslint .",
     "start": "react-native start",
-    "test": "jest"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:verbose": "jest --verbose",
+    "test:storage": "jest src/utils/__tests__/storage.test.js",
+    "test:volumeControl": "jest src/utils/__tests__/volumeControl.test.js --runInBand",
+    "test:brightnessControl": "jest src/utils/__tests__/brightnessControl.test.js --runInBand",
+    "test:utils": "jest src/utils/__tests__",
+    "test:screens": "jest src/screens/__tests__",
+    "test:ci": "jest --ci --coverage --maxWorkers=2",
+    "test:serial": "jest --runInBand",
+    "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
     "@notifee/react-native": "^9.1.8",
@@ -34,6 +45,8 @@
     "@react-native/eslint-config": "0.73.2",
     "@react-native/metro-config": "0.73.5",
     "@react-native/typescript-config": "0.73.1",
+    "@testing-library/jest-native": "^5.4.3",
+    "@testing-library/react-native": "^13.3.3",
     "@types/react": "^18.2.6",
     "@types/react-test-renderer": "^18.0.0",
     "babel-jest": "^29.6.3",

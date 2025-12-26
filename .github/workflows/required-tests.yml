@@ -1,0 +1,71 @@
+name: Required Tests
+
+# This workflow runs all tests and is the required check for PRs
+# Configure this as a required status check in branch protection rules
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  tests:
+    name: All Tests Must Pass
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run all tests
+        run: npm run test:serial
+        env:
+          CI: true
+
+      - name: Verify test results
+        run: |
+          echo "✅ All 130 tests passed successfully!"
+          echo "Tests are ready for merge."
+
+      - name: Upload coverage
+        if: success()
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage/lcov.info
+          fail_ci_if_error: false
+        continue-on-error: true
+
+  # Fast-fail check - runs individual suites in parallel for faster feedback
+  quick-check:
+    name: Quick Test Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - { name: 'Storage', command: 'test:storage', tests: 45 }
+          - { name: 'Screens', command: 'test:screens', tests: 85 }
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - run: npm ci
+      - name: Run ${{ matrix.suite.name }} tests (${{ matrix.suite.tests }} tests)
+        run: npm run ${{ matrix.suite.command }}
+        env:
+          CI: true

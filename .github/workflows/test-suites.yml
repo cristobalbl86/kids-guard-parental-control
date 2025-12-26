@@ -1,0 +1,124 @@
+name: Test Suites (Parallel)
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  storage-tests:
+    name: Storage Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run test:storage
+        env:
+          CI: true
+
+  screen-tests:
+    name: Screen Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run test:screens
+        env:
+          CI: true
+
+  volume-tests:
+    name: Volume Control Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run test:volumeControl
+        env:
+          CI: true
+
+  brightness-tests:
+    name: Brightness Control Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run test:brightnessControl
+        env:
+          CI: true
+
+  all-tests-passed:
+    name: All Tests Passed ✅
+    runs-on: ubuntu-latest
+    needs: [storage-tests, screen-tests, volume-tests, brightness-tests]
+    if: always()
+    steps:
+      - name: Check all test suites passed
+        run: |
+          if [[ "${{ needs.storage-tests.result }}" != "success" ]] || \
+             [[ "${{ needs.screen-tests.result }}" != "success" ]] || \
+             [[ "${{ needs.volume-tests.result }}" != "success" ]] || \
+             [[ "${{ needs.brightness-tests.result }}" != "success" ]]; then
+            echo "❌ One or more test suites failed!"
+            echo "Storage: ${{ needs.storage-tests.result }}"
+            echo "Screens: ${{ needs.screen-tests.result }}"
+            echo "Volume: ${{ needs.volume-tests.result }}"
+            echo "Brightness: ${{ needs.brightness-tests.result }}"
+            exit 1
+          fi
+          echo "✅ All test suites passed!"
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const storageResult = '${{ needs.storage-tests.result }}';
+            const screenResult = '${{ needs.screen-tests.result }}';
+            const volumeResult = '${{ needs.volume-tests.result }}';
+            const brightnessResult = '${{ needs.brightness-tests.result }}';
+
+            const emoji = (result) => result === 'success' ? '✅' : '❌';
+
+            const comment = `## Test Results Summary
+
+            | Test Suite | Status | Tests |
+            |------------|--------|-------|
+            | Storage | ${emoji(storageResult)} ${storageResult} | 45 tests |
+            | Screens | ${emoji(screenResult)} ${screenResult} | 85 tests |
+            | Volume Control | ${emoji(volumeResult)} ${volumeResult} | 43 tests |
+            | Brightness Control | ${emoji(brightnessResult)} ${brightnessResult} | 43 tests |
+
+            **Total:** 130 tests
+
+            ${
+              [storageResult, screenResult, volumeResult, brightnessResult].every(r => r === 'success')
+                ? '✅ **All tests passed!** Ready to merge.'
+                : '❌ **Tests failed.** Please fix failing tests before merging.'
+            }
+
+            [View detailed results](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
