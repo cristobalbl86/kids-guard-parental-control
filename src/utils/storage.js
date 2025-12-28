@@ -232,16 +232,11 @@ export const saveLastAdShownTime = async () => {
 };
 
 export const getLastAdShownTime = async () => {
-  try {
-    const timestamp = await AsyncStorage.getItem(KEYS.LAST_AD_SHOWN);
-    if (timestamp === null) {
-      return null;
-    }
-    return parseInt(timestamp, 10);
-  } catch (error) {
-    console.error('Error getting last ad shown time:', error);
+  const timestamp = await AsyncStorage.getItem(KEYS.LAST_AD_SHOWN);
+  if (timestamp === null) {
     return null;
   }
+  return parseInt(timestamp, 10);
 };
 
 export const canShowAd = async () => {

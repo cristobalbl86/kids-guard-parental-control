@@ -40,7 +40,11 @@ export const initializeAdMob = async () => {
     setupAdEventListeners();
 
     // Load the first ad
-    await loadInterstitialAd();
+    const loaded = await loadInterstitialAd();
+    if (!loaded) {
+      console.error('[AdMob] Failed to load initial ad');
+      return false;
+    }
 
     admobInitialized = true;
     console.log('[AdMob] AdMob initialized successfully');
@@ -201,4 +205,12 @@ export const forceShowAd = async () => {
 // Check if ad is ready to show
 export const isAdLoaded = () => {
   return adLoaded;
+};
+
+// Reset module state (for testing only)
+export const __resetAdMobForTesting = () => {
+  interstitial = null;
+  adLoaded = false;
+  admobInitialized = false;
+  isShowingAd = false;
 };
