@@ -10,7 +10,7 @@ import {NavigationContainer} from '@react-navigation/native';
 import {createStackNavigator} from '@react-navigation/stack';
 import {Provider as PaperProvider} from 'react-native-paper';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
-import {StatusBar} from 'react-native';
+import {StatusBar, AppState} from 'react-native';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 
 // Screens
@@ -26,6 +26,7 @@ import {checkFirstLaunch, initializeApp} from './src/utils/storage';
 import {theme} from './src/utils/theme';
 import {initializeVolumeControl} from './src/utils/volumeControl';
 import {initializeBrightnessControl} from './src/utils/brightnessControl';
+import {initializeAdMob, showInterstitialIfEligible} from './src/utils/admobControl';
 
 const Stack = createStackNavigator();
 
@@ -37,6 +38,28 @@ export default function App() {
   useEffect(() => {
     initializeApplication();
   }, []);
+
+  // AppState listener for showing ads on foreground
+  useEffect(() => {
+    if (!isSetupComplete) {
+      // Don't show ads until setup is complete
+      return;
+    }
+
+    const handleAppStateChange = async (nextAppState: string) => {
+      if (nextAppState === 'active') {
+        console.log('[App] App came to foreground');
+        // Try to show ad if eligible (6-hour check happens inside)
+        await showInterstitialIfEligible();
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      subscription?.remove();
+    };
+  }, [isSetupComplete]);
 
   const initializeApplication = async () => {
     try {
@@ -50,6 +73,11 @@ export default function App() {
         try {
           await initializeVolumeControl();
           await initializeBrightnessControl();
+          await initializeAdMob();
+          // Show ad after initialization if eligible
+          setTimeout(async () => {
+            await showInterstitialIfEligible();
+          }, 2000);
         } catch (error) {
           console.warn('Failed to initialize controls:', error);
         }
@@ -61,9 +89,20 @@ export default function App() {
     }
   };
 
-  const handleSetupComplete = () => {
+  const handleSetupComplete = async () => {
     setIsSetupComplete(true);
     setIsFirstLaunch(false);
+
+    // Initialize AdMob after setup completes
+    try {
+      await initializeAdMob();
+      // Show ad after a short delay to let the UI settle
+      setTimeout(async () => {
+        await showInterstitialIfEligible();
+      }, 2000);
+    } catch (error) {
+      console.warn('Failed to initialize AdMob after setup:', error);
+    }
   };
 
   if (isLoading) {

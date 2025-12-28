@@ -9,6 +9,7 @@ const KEYS = {
   BRIGHTNESS_SETTINGS: 'brightness_settings',
   FAILED_ATTEMPTS: 'failed_attempts',
   LOCKOUT_UNTIL: 'lockout_until',
+  LAST_AD_SHOWN: 'last_ad_shown',
 };
 
 // Initialize app on first launch
@@ -215,5 +216,57 @@ export const getAllSettings = async () => {
   } catch (error) {
     console.error('Error getting all settings:', error);
     throw error;
+  }
+};
+
+// Ad Timing Management
+export const saveLastAdShownTime = async () => {
+  try {
+    const timestamp = Date.now().toString();
+    await AsyncStorage.setItem(KEYS.LAST_AD_SHOWN, timestamp);
+    console.log('[AdMob] Last ad shown time saved:', new Date(Date.now()).toISOString());
+  } catch (error) {
+    console.error('Error saving last ad shown time:', error);
+    throw error;
+  }
+};
+
+export const getLastAdShownTime = async () => {
+  const timestamp = await AsyncStorage.getItem(KEYS.LAST_AD_SHOWN);
+  if (timestamp === null) {
+    return null;
+  }
+  return parseInt(timestamp, 10);
+};
+
+export const canShowAd = async () => {
+  try {
+    const lastShown = await getLastAdShownTime();
+
+    // If never shown before, can show
+    if (lastShown === null) {
+      console.log('[AdMob] No previous ad shown, eligible to show');
+      return true;
+    }
+
+    const now = Date.now();
+    const sixHoursInMs = 6 * 60 * 60 * 1000; // 6 hours
+    const elapsed = now - lastShown;
+
+    const canShow = elapsed >= sixHoursInMs;
+
+    if (canShow) {
+      const elapsedHours = (elapsed / (60 * 60 * 1000)).toFixed(2);
+      console.log(`[AdMob] Eligible to show ad (${elapsedHours} hours elapsed)`);
+    } else {
+      const remainingMs = sixHoursInMs - elapsed;
+      const remainingMinutes = Math.ceil(remainingMs / (60 * 1000));
+      console.log(`[AdMob] Too soon to show ad (${remainingMinutes} minutes remaining)`);
+    }
+
+    return canShow;
+  } catch (error) {
+    console.error('Error checking if can show ad:', error);
+    return false;
   }
 };

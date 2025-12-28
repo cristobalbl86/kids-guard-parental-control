@@ -12,6 +12,9 @@ import {
   initializeApp,
   checkFirstLaunch,
   completeFirstLaunch,
+  saveLastAdShownTime,
+  getLastAdShownTime,
+  canShowAd,
 } from '../storage';
 
 describe('Storage Utility', () => {
@@ -483,6 +486,194 @@ describe('Storage Utility', () => {
       const settings = await getVolumeSettings();
 
       expect(settings).toEqual({ volume: 50, locked: false, isDefault: true });
+    });
+  });
+
+  describe('Ad Timing Management', () => {
+    describe('saveLastAdShownTime', () => {
+      it('should save current timestamp to AsyncStorage', async () => {
+        const mockNow = 1640000000000;
+        jest.spyOn(Date, 'now').mockReturnValue(mockNow);
+
+        await saveLastAdShownTime();
+
+        expect(AsyncStorage.setItem).toHaveBeenCalledWith(
+          'last_ad_shown',
+          mockNow.toString()
+        );
+
+        Date.now.mockRestore();
+      });
+
+      it('should throw error if AsyncStorage fails', async () => {
+        AsyncStorage.setItem.mockRejectedValue(new Error('Storage error'));
+
+        await expect(saveLastAdShownTime()).rejects.toThrow('Storage error');
+      });
+
+      it('should log the saved time', async () => {
+        const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+        const mockNow = 1640000000000;
+        jest.spyOn(Date, 'now').mockReturnValue(mockNow);
+
+        await saveLastAdShownTime();
+
+        expect(consoleSpy).toHaveBeenCalledWith(
+          expect.stringContaining('[AdMob] Last ad shown time saved:'),
+          expect.any(String)
+        );
+
+        consoleSpy.mockRestore();
+        Date.now.mockRestore();
+      });
+    });
+
+    describe('getLastAdShownTime', () => {
+      it('should retrieve timestamp from AsyncStorage', async () => {
+        const mockTimestamp = '1640000000000';
+        AsyncStorage.getItem.mockResolvedValue(mockTimestamp);
+
+        const result = await getLastAdShownTime();
+
+        expect(AsyncStorage.getItem).toHaveBeenCalledWith('last_ad_shown');
+        expect(result).toBe(1640000000000);
+      });
+
+      it('should return null if no timestamp exists', async () => {
+        AsyncStorage.getItem.mockResolvedValue(null);
+
+        const result = await getLastAdShownTime();
+
+        expect(result).toBeNull();
+      });
+
+      it('should throw error when AsyncStorage fails', async () => {
+        AsyncStorage.getItem.mockRejectedValue(new Error('Storage error'));
+
+        await expect(getLastAdShownTime()).rejects.toThrow('Storage error');
+      });
+
+      it('should parse timestamp as integer', async () => {
+        AsyncStorage.getItem.mockResolvedValue('1640000000000');
+
+        const result = await getLastAdShownTime();
+
+        expect(typeof result).toBe('number');
+        expect(result).toBe(1640000000000);
+      });
+    });
+
+    describe('canShowAd', () => {
+      it('should return true if no ad was shown before', async () => {
+        AsyncStorage.getItem.mockResolvedValue(null);
+
+        const result = await canShowAd();
+
+        expect(result).toBe(true);
+      });
+
+      it('should return true if 6 hours have elapsed', async () => {
+        const sixHoursAgo = Date.now() - (6 * 60 * 60 * 1000);
+        AsyncStorage.getItem.mockResolvedValue(sixHoursAgo.toString());
+
+        const result = await canShowAd();
+
+        expect(result).toBe(true);
+      });
+
+      it('should return true if more than 6 hours have elapsed', async () => {
+        const sevenHoursAgo = Date.now() - (7 * 60 * 60 * 1000);
+        AsyncStorage.getItem.mockResolvedValue(sevenHoursAgo.toString());
+
+        const result = await canShowAd();
+
+        expect(result).toBe(true);
+      });
+
+      it('should return false if less than 6 hours have elapsed', async () => {
+        const threeHoursAgo = Date.now() - (3 * 60 * 60 * 1000);
+        AsyncStorage.getItem.mockResolvedValue(threeHoursAgo.toString());
+
+        const result = await canShowAd();
+
+        expect(result).toBe(false);
+      });
+
+      it('should return false if ad was just shown', async () => {
+        const justNow = Date.now() - 1000; // 1 second ago
+        AsyncStorage.getItem.mockResolvedValue(justNow.toString());
+
+        const result = await canShowAd();
+
+        expect(result).toBe(false);
+      });
+
+      it('should return false on error', async () => {
+        const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+        AsyncStorage.getItem.mockRejectedValue(new Error('Storage error'));
+
+        const result = await canShowAd();
+
+        expect(result).toBe(false);
+        expect(consoleErrorSpy).toHaveBeenCalled();
+
+        consoleErrorSpy.mockRestore();
+      });
+
+      it('should log eligibility status when can show', async () => {
+        const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+        AsyncStorage.getItem.mockResolvedValue(null);
+
+        await canShowAd();
+
+        expect(consoleSpy).toHaveBeenCalledWith(
+          expect.stringContaining('[AdMob] No previous ad shown, eligible to show')
+        );
+
+        consoleSpy.mockRestore();
+      });
+
+      it('should log remaining time when cannot show', async () => {
+        const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+        const oneHourAgo = Date.now() - (1 * 60 * 60 * 1000);
+        AsyncStorage.getItem.mockResolvedValue(oneHourAgo.toString());
+
+        await canShowAd();
+
+        expect(consoleSpy).toHaveBeenCalledWith(
+          expect.stringContaining('[AdMob] Too soon to show ad')
+        );
+        expect(consoleSpy).toHaveBeenCalledWith(
+          expect.stringContaining('minutes remaining')
+        );
+
+        consoleSpy.mockRestore();
+      });
+
+      it('should calculate elapsed time correctly', async () => {
+        const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+        const eightHoursAgo = Date.now() - (8 * 60 * 60 * 1000);
+        AsyncStorage.getItem.mockResolvedValue(eightHoursAgo.toString());
+
+        await canShowAd();
+
+        const logCall = consoleSpy.mock.calls.find(call =>
+          call[0].includes('Eligible to show ad')
+        );
+        expect(logCall).toBeDefined();
+        expect(logCall[0]).toMatch(/\d+\.\d+ hours elapsed/);
+
+        consoleSpy.mockRestore();
+      });
+
+      it('should handle exactly 6 hours as eligible', async () => {
+        const exactlySixHours = Date.now() - (6 * 60 * 60 * 1000);
+        AsyncStorage.getItem.mockResolvedValue(exactlySixHours.toString());
+
+        const result = await canShowAd();
+
+        expect(result).toBe(true);
+      });
     });
   });
 });

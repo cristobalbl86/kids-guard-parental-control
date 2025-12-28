@@ -17,7 +17,11 @@
       "Bash(npm run test:storage:*)",
       "Bash(npm run test:screens:*)",
       "Bash(npm run test:ci:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(dir:*)",
+      "Bash(gradlew.bat clean:*)",
+      "Bash(pkill:*)",
+      "Bash(npm uninstall:*)"
     ],
     "deny": [],
     "ask": []
