@@ -8,6 +8,12 @@ jest.mock('../storage', () => ({
   saveBrightnessSettings: jest.fn(),
 }));
 
+// Mock enforcementService module
+jest.mock('../enforcementService', () => ({
+  notifyVolumeEnforcement: jest.fn().mockResolvedValue(),
+  notifyBrightnessEnforcement: jest.fn().mockResolvedValue(),
+}));
+
 import {
   initializeBrightnessControl,
   setBrightness,
