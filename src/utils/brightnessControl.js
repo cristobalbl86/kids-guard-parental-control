@@ -1,5 +1,6 @@
 import { NativeModules, NativeEventEmitter } from 'react-native';
 import { getBrightnessSettings, saveBrightnessSettings } from './storage';
+import { notifyBrightnessEnforcement } from './enforcementService';
 
 const { BrightnessControl } = NativeModules;
 
@@ -73,6 +74,9 @@ export const startBrightnessMonitoring = async (targetBrightnessPercent) => {
     // Start enforcement using native module
     await BrightnessControl.startEnforcing(targetBrightnessPercent);
 
+    // Notify enforcement service that brightness enforcement is active
+    await notifyBrightnessEnforcement(true);
+
     console.log(`Brightness monitoring started at ${targetBrightnessPercent}%`);
     return true;
   } catch (error) {
@@ -88,6 +92,9 @@ export const stopBrightnessMonitoring = async () => {
     enforcedBrightness = null;
 
     await BrightnessControl.stopEnforcing();
+
+    // Notify enforcement service that brightness enforcement is inactive
+    await notifyBrightnessEnforcement(false);
 
     console.log('Brightness monitoring stopped');
     return true;
