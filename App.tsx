@@ -34,6 +34,7 @@ export default function App() {
   const [isFirstLaunch, setIsFirstLaunch] = useState(null);
   const [isSetupComplete, setIsSetupComplete] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [appState, setAppState] = useState(AppState.currentState);
 
   useEffect(() => {
     initializeApplication();
@@ -47,11 +48,18 @@ export default function App() {
     }
 
     const handleAppStateChange = async (nextAppState: string) => {
-      if (nextAppState === 'active') {
-        console.log('[App] App came to foreground');
+      // Only show ads when transitioning FROM background/inactive TO active (foreground)
+      const isComingToForeground =
+        (appState === 'background' || appState === 'inactive') &&
+        nextAppState === 'active';
+
+      if (isComingToForeground) {
+        console.log('[App] App came to foreground from background');
         // Try to show ad if eligible (6-hour check happens inside)
         await showInterstitialIfEligible();
       }
+
+      setAppState(nextAppState);
     };
 
     const subscription = AppState.addEventListener('change', handleAppStateChange);
@@ -59,7 +67,7 @@ export default function App() {
     return () => {
       subscription?.remove();
     };
-  }, [isSetupComplete]);
+  }, [isSetupComplete, appState]);
 
   const initializeApplication = async () => {
     try {
