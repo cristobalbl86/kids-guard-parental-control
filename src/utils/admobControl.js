@@ -39,15 +39,19 @@ export const initializeAdMob = async () => {
     // Set up event listeners
     setupAdEventListeners();
 
-    // Load the first ad
-    const loaded = await loadInterstitialAd();
-    if (!loaded) {
-      console.error('[AdMob] Failed to load initial ad');
-      return false;
-    }
+    // Load the first ad asynchronously (don't block initialization)
+    loadInterstitialAd().then(loaded => {
+      if (loaded) {
+        console.log('[AdMob] Initial ad loaded successfully');
+      } else {
+        console.error('[AdMob] Failed to load initial ad');
+      }
+    }).catch(error => {
+      console.error('[AdMob] Error loading initial ad:', error);
+    });
 
     admobInitialized = true;
-    console.log('[AdMob] AdMob initialized successfully');
+    console.log('[AdMob] AdMob initialized (ad loading in background)');
     return true;
   } catch (error) {
     console.error('[AdMob] Error initializing AdMob:', error);

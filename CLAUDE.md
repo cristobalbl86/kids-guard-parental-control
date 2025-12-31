@@ -4,9 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Kids guard - Parental control** is a React Native parental control application for Android that allows parents to control and lock device settings (volume and brightness). The app was migrated from Expo to React Native CLI to enable native control capabilities.
+**Kids guard - Parental control** is a React Native parental control application for Android that allows parents to control and lock device settings (volume and brightness). The app was migrated from Expo to React Native CLI to enable native control capabilities and includes AdMob interstitial ads for monetization.
 
 **Key Purpose**: Enable parents to set and lock volume/brightness levels that children cannot override, with enforcement happening at the native Android level.
+
+**Monetization**: Interstitial ads shown once every 6 hours when the app comes to foreground or after setup completion.
 
 **GitHub Repository**: kids-guard-parental-control
 
@@ -63,9 +65,12 @@ This app follows a **hybrid architecture** with React Native JavaScript UI commu
 React Native (JavaScript)
   ├── Screens (UI Components)
   ├── Utils (Business Logic)
-  │   ├── storage.js - AsyncStorage + Keychain
+  │   ├── storage.js - AsyncStorage + Keychain + Ad Timing
   │   ├── volumeControl.js - Bridge to VolumeControlModule
-  │   └── brightnessControl.js - Bridge to BrightnessControlModule
+  │   ├── brightnessControl.js - Bridge to BrightnessControlModule
+  │   └── admobControl.js - AdMob SDK integration
+  ├── Config
+  │   └── admob.js - AdMob configuration (App ID, Ad Unit ID)
   └── Native Bridge (NativeModules)
          ↓
 Native Android (Java/Kotlin)
@@ -73,6 +78,9 @@ Native Android (Java/Kotlin)
   ├── BrightnessControlModule.java - System brightness control
   ├── VolumeControlPackage.java - Package registration
   └── MainApplication.kt - Registers native modules
+
+Third-Party SDKs
+  └── Google Mobile Ads SDK - Interstitial ad delivery
 ```
 
 ### Critical Architecture Details
@@ -123,6 +131,31 @@ isSetupComplete = true:
 ```
 
 State managed in `App.tsx` with `isSetupComplete` controlling which navigation stack is mounted.
+
+#### 6. AdMob Monetization Architecture
+**Interstitial ad system** with time-based frequency control:
+- **6-hour interval**: Ads shown maximum once every 6 hours
+- **Timestamp tracking**: Uses AsyncStorage to persist last ad shown time
+- **AppState listener**: Detects app foreground events to trigger ad display
+- **Initialization triggers**: Shows ad after app initialization and after PIN setup completion
+- **Test mode**: Configured via `src/config/admob.js` to use test ad units during development
+
+**Ad Display Flow**:
+```
+App Foreground / Setup Complete
+  ↓
+showInterstitialIfEligible()
+  ↓
+Check canShowAd() (6-hour interval)
+  ↓
+Show ad if eligible
+  ↓
+Save timestamp via saveLastAdShownTime()
+  ↓
+Preload next ad
+```
+
+**Important**: Ad SDK requires minSdkVersion 23 (Android 6.0+). 10-second minimum view time is tracked but not enforced (AdMob SDK limitation).
 
 ## Native Modules
 
@@ -222,6 +255,34 @@ BrightnessControlModule uses **quadratic curve (Gamma 2.0)** for perception matc
 
 This matches Android's slider behavior where 50% appears perceptually half bright.
 
+### AdMob Configuration Pattern
+Ad configuration centralized in `src/config/admob.js`:
+```javascript
+const AdMobConfig = {
+  USE_TEST_ADS: true,  // Set to false for production
+  APP_ID: 'ca-app-pub-...',
+  AD_UNIT_ID: 'ca-app-pub-...',
+};
+```
+
+**Important**:
+- Set `USE_TEST_ADS: false` for production builds
+- App ID must match the one in `AndroidManifest.xml`
+- Test ad units are automatically used in `__DEV__` mode
+
+### Ad Timing Storage
+Ad timestamps stored in AsyncStorage with these keys:
+```javascript
+KEYS.LAST_AD_SHOWN = 'last_ad_shown'
+```
+
+**Ad timing functions** in `storage.js`:
+- `saveLastAdShownTime()`: Save current timestamp after ad shown
+- `getLastAdShownTime()`: Retrieve last ad timestamp (throws on error)
+- `canShowAd()`: Check if 6 hours have elapsed (returns false on error)
+
+**Error handling**: Conservative approach - if storage fails, `canShowAd()` returns `false` to prevent ad spam.
+
 ## Common Development Tasks
 
 ### Testing Native Modules
@@ -248,6 +309,76 @@ For native Java/Kotlin changes:
 1. Add to `KEYS` object in `src/utils/storage.js`
 2. Create getter/setter functions following existing patterns
 3. Use AsyncStorage for non-sensitive data, Keychain for sensitive data
+
+### Testing AdMob Integration
+
+**Viewing ad events in logs**:
+```bash
+npx react-native log-android | grep AdMob
+```
+
+**Force showing ads (bypasses 6-hour check)**:
+```javascript
+import { forceShowAd } from './src/utils/admobControl';
+await forceShowAd();  // For testing only
+```
+
+**Testing ad timing logic**:
+```javascript
+import { canShowAd, saveLastAdShownTime } from './src/utils/storage';
+
+// Check if eligible
+const eligible = await canShowAd();  // Returns true if 6+ hours elapsed
+
+// Manually save timestamp (simulates ad shown)
+await saveLastAdShownTime();
+```
+
+**Unit testing with AdMob**:
+- Use `__resetAdMobForTesting()` in test setup to clear module state
+- Mock `react-native-google-mobile-ads` module in test files
+- See `src/utils/__tests__/admobControl.test.js` for examples
+
+**Important**: Always use test ad units during development. Set `USE_TEST_ADS: true` in `src/config/admob.js`.
+
+## Key Dependencies
+
+### Core React Native
+- `react-native`: 0.73.6
+- `react`: 18.2.0
+
+### Navigation
+- `@react-navigation/native`: ^6.1.17
+- `@react-navigation/stack`: ^6.3.29
+
+### UI Components
+- `react-native-paper`: ^5.14.5
+- `react-native-vector-icons`: ^10.3.0
+
+### Storage & Security
+- `@react-native-async-storage/async-storage`: ^2.2.0
+- `react-native-keychain`: ^10.0.0 (hardware-encrypted PIN storage)
+
+### Device Control
+- Custom native modules (VolumeControlModule, BrightnessControlModule)
+
+### Monetization
+- `react-native-google-mobile-ads`: ^14.2.4
+  - **Minimum SDK**: Android API 23 (Android 6.0+)
+  - **Purpose**: Interstitial ad delivery
+  - **Configuration**: `src/config/admob.js` + `AndroidManifest.xml`
+
+### Localization
+- `i18n-js`: ^4.5.1
+- `react-native-localize`: ^3.6.0
+
+### Testing
+- `jest`: ^29.6.3
+- `@testing-library/react-native`: ^13.3.3
+
+**Important version notes**:
+- Google Mobile Ads v14.2.4 is compatible with Kotlin 1.9.22 (later versions require Kotlin 2.x which conflicts with other RN libraries)
+- minSdkVersion must be 23+ (changed from 21) due to Google Mobile Ads SDK requirement
 
 ## Migration Notes (Expo → React Native CLI)
 
@@ -321,21 +452,85 @@ For production:
 2. Show persistent notification (required)
 3. Request battery optimization exemption
 
+### Blank Screen When Returning from Background
+**Symptom**: When the app returns from background (via notification or app icon), a white/blank screen appears that requires user interaction (swipe) to render properly.
+
+**Root Cause**: Android may kill the JS context when the app is in background. When resuming, React Native recreates the JS bundle (you'll see `Running "kids-guard-parental-control" with {"rootTag":XX}` in logs), but the native view hierarchy doesn't render properly until user interaction triggers a layout pass.
+
+**Solution**: Override `onResume()` in `MainActivity.kt` to force native layout refresh:
+```kotlin
+override fun onResume() {
+  super.onResume()
+  val decorView = window.decorView
+  val handler = Handler(Looper.getMainLooper())
+
+  decorView.post {
+    decorView.requestLayout()
+    decorView.invalidate()
+  }
+
+  handler.postDelayed({
+    decorView.requestLayout()
+    decorView.invalidate()
+  }, 100)
+
+  handler.postDelayed({
+    decorView.requestLayout()
+    decorView.invalidate()
+  }, 300)
+}
+```
+
+**Key insight**: The `requestLayout()` and `invalidate()` calls force the Android view hierarchy to refresh, which is what user interaction (swipe) was doing implicitly.
+
+### AdMob Ads Not Showing
+
+**Check initialization**:
+- Verify `initializeAdMob()` called in `App.tsx`
+- Check logs for "[AdMob] AdMob initialized successfully"
+- Ensure no initialization errors in logs
+
+**Check eligibility**:
+- Ads only show once every 6 hours
+- Use `forceShowAd()` for testing (bypasses time check)
+- Check logs for "[AdMob] Eligible to show ad" or "[AdMob] Too soon to show ad"
+
+**Check test mode**:
+- Development: Set `USE_TEST_ADS: true` in `src/config/admob.js`
+- Production: Set `USE_TEST_ADS: false`
+- Test ads have Google branding and show immediately
+
+**Check minSdkVersion**:
+- Must be API 23+ in `android/build.gradle`
+- If you see "version 21 cannot be smaller than version 23", update minSdkVersion
+
+**Check App ID in manifest**:
+- `AndroidManifest.xml` must have `com.google.android.gms.ads.APPLICATION_ID` metadata
+- Value must match `APP_ID` in `src/config/admob.js`
+
+**Common issues**:
+- Ad not loaded: Wait for LOADED event, check logs for "Interstitial ad loaded"
+- Network errors: Test ads require internet connection
+- Frequency limit: Clear app data or wait 6 hours between ad displays
+
 ## Important Files Reference
 
 | File | Purpose |
 |------|---------|
-| `App.tsx` | Root component, navigation, initialization |
+| `App.tsx` | Root component, navigation, initialization, AdMob integration |
 | `src/screens/HomeScreen.js` | Main screen showing lock status |
 | `src/screens/ParentSettingsScreen.js` | Control panel for settings |
-| `src/utils/storage.js` | Data persistence (Keychain + AsyncStorage) |
+| `src/utils/storage.js` | Data persistence (Keychain + AsyncStorage + Ad timing) |
 | `src/utils/volumeControl.js` | JS bridge to VolumeControlModule |
 | `src/utils/brightnessControl.js` | JS bridge to BrightnessControlModule |
+| `src/utils/admobControl.js` | AdMob SDK integration and ad display logic |
+| `src/config/admob.js` | AdMob configuration (App ID, Ad Unit ID, test mode) |
+| `src/utils/__tests__/admobControl.test.js` | Unit tests for AdMob functionality |
 | `android/app/src/main/java/com/kidsguard/VolumeControlModule.java` | Native volume control |
 | `android/app/src/main/java/com/kidsguard/BrightnessControlModule.java` | Native brightness control |
 | `android/app/src/main/java/com/kidsguard/VolumeControlPackage.java` | Package registration |
 | `android/app/src/main/java/com/kidsguard/MainApplication.kt` | Module registration |
-| `android/app/src/main/AndroidManifest.xml` | Permissions and config |
+| `android/app/src/main/AndroidManifest.xml` | Permissions, config, AdMob App ID |
 
 ## Package Structure
 

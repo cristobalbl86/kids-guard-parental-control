@@ -7,6 +7,7 @@ import { updateVolumeSettings, getVolume } from '../utils/volumeControl';
 import { updateBrightnessSettings, getBrightness, checkWriteSettingsPermission, requestWriteSettingsPermission } from '../utils/brightnessControl';
 import PINChangeDialog from '../components/PINChangeDialog';
 import { t } from '../utils/i18n';
+import { showInterstitialIfEligible } from '../utils/admobControl';
 
 export default function ParentSettingsScreen({ navigation }) {
   const [volumeValue, setVolumeValue] = useState(50);
@@ -24,9 +25,11 @@ export default function ParentSettingsScreen({ navigation }) {
   }, []);
 
   useEffect(() => {
-    // Check permission when screen comes into focus
-    const unsubscribe = navigation.addListener('focus', () => {
+    // Check permission and show ad when screen comes into focus
+    const unsubscribe = navigation.addListener('focus', async () => {
       checkAndReapplyBrightness();
+      // Show ad if eligible (6-hour check happens inside)
+      await showInterstitialIfEligible();
     });
 
     return unsubscribe;

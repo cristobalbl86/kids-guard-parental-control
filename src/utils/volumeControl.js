@@ -1,5 +1,6 @@
 import { NativeModules, NativeEventEmitter } from 'react-native';
 import { getVolumeSettings, saveVolumeSettings } from './storage';
+import { notifyVolumeEnforcement } from './enforcementService';
 
 const { VolumeControl } = NativeModules;
 
@@ -72,6 +73,9 @@ export const startVolumeMonitoring = async (targetVolumePercent) => {
     // Start enforcement using native module
     await VolumeControl.startEnforcing(targetVolumePercent);
 
+    // Notify enforcement service that volume enforcement is active
+    await notifyVolumeEnforcement(true);
+
     console.log(`Volume monitoring started at ${targetVolumePercent}%`);
     return true;
   } catch (error) {
@@ -87,6 +91,9 @@ export const stopVolumeMonitoring = async () => {
     enforcedVolume = null;
 
     await VolumeControl.stopEnforcing();
+
+    // Notify enforcement service that volume enforcement is inactive
+    await notifyVolumeEnforcement(false);
 
     console.log('Volume monitoring stopped');
     return true;

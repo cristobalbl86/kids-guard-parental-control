@@ -414,16 +414,17 @@ public class BrightnessControlModule extends ReactContextBaseJavaModule {
                             targetBrightness
                         );
 
-                        // Set window brightness explicitly to ensure enforcement in app
+                        // Set window brightness explicitly to ensure enforcement in app (if app is in foreground)
                         Activity activity = getCurrentActivity();
                         if (activity != null) {
                             Window window = activity.getWindow();
                             WindowManager.LayoutParams layoutParams = window.getAttributes();
                             layoutParams.screenBrightness = (float)targetBrightness / brightnessMaximum;
                             window.setAttributes(layoutParams);
+                            Log.d(TAG, "Brightness enforced (system + window): " + currentPercent + "% -> " + enforcedBrightness + "%");
+                        } else {
+                            Log.d(TAG, "Brightness enforced (system only, app in background): " + currentPercent + "% -> " + enforcedBrightness + "%");
                         }
-
-                        Log.d(TAG, "Brightness enforced: " + currentPercent + "% -> " + enforcedBrightness + "%");
 
                         // Send event to JavaScript
                         sendBrightnessEnforcedEvent(currentPercent, enforcedBrightness);

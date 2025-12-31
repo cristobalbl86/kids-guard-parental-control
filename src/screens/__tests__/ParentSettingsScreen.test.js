@@ -10,6 +10,9 @@ import * as brightnessControl from '../../utils/brightnessControl';
 jest.mock('../../utils/storage');
 jest.mock('../../utils/volumeControl');
 jest.mock('../../utils/brightnessControl');
+jest.mock('../../utils/admobControl', () => ({
+  showInterstitialIfEligible: jest.fn().mockResolvedValue(false),
+}));
 
 // Mock PINChangeDialog component
 jest.mock('../../components/PINChangeDialog', () => 'PINChangeDialog');

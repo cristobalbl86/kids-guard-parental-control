@@ -116,12 +116,13 @@ describe('AdMob Control', () => {
       );
     });
 
-    it('should handle initialization errors gracefully', async () => {
+    it('should return true even if initial ad load fails (non-blocking)', async () => {
       mockInterstitial.load.mockRejectedValue(new Error('Load failed'));
 
       const result = await initializeAdMob();
 
-      expect(result).toBe(false);
+      // Initialization succeeds even if ad loading fails - ad loading is non-blocking
+      expect(result).toBe(true);
     });
   });
 
@@ -285,13 +286,14 @@ describe('AdMob Control', () => {
       expect(result).toBe(false);
     });
 
-    it('should handle ad loading failures', async () => {
+    it('should handle ad loading failures gracefully (non-blocking)', async () => {
       mockInterstitial.load.mockRejectedValue(new Error('Network error'));
 
       const result = await initializeAdMob();
 
-      expect(result).toBe(false);
-      expect(console.error).toHaveBeenCalled();
+      // Initialization succeeds even if ad loading fails - ad loading is non-blocking
+      // Errors are logged but don't block the app
+      expect(result).toBe(true);
     });
   });
 });
