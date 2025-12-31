@@ -452,6 +452,37 @@ For production:
 2. Show persistent notification (required)
 3. Request battery optimization exemption
 
+### Blank Screen When Returning from Background
+**Symptom**: When the app returns from background (via notification or app icon), a white/blank screen appears that requires user interaction (swipe) to render properly.
+
+**Root Cause**: Android may kill the JS context when the app is in background. When resuming, React Native recreates the JS bundle (you'll see `Running "kids-guard-parental-control" with {"rootTag":XX}` in logs), but the native view hierarchy doesn't render properly until user interaction triggers a layout pass.
+
+**Solution**: Override `onResume()` in `MainActivity.kt` to force native layout refresh:
+```kotlin
+override fun onResume() {
+  super.onResume()
+  val decorView = window.decorView
+  val handler = Handler(Looper.getMainLooper())
+
+  decorView.post {
+    decorView.requestLayout()
+    decorView.invalidate()
+  }
+
+  handler.postDelayed({
+    decorView.requestLayout()
+    decorView.invalidate()
+  }, 100)
+
+  handler.postDelayed({
+    decorView.requestLayout()
+    decorView.invalidate()
+  }, 300)
+}
+```
+
+**Key insight**: The `requestLayout()` and `invalidate()` calls force the Android view hierarchy to refresh, which is what user interaction (swipe) was doing implicitly.
+
 ### AdMob Ads Not Showing
 
 **Check initialization**:

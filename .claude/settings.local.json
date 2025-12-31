@@ -21,7 +21,12 @@
       "Bash(dir:*)",
       "Bash(gradlew.bat clean:*)",
       "Bash(pkill:*)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(npm start)"    
     ],
     "deny": [],
     "ask": []
