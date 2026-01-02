@@ -18,7 +18,9 @@
     "test:screens": "jest src/screens/__tests__",
     "test:ci": "jest --ci --coverage --maxWorkers=2",
     "test:serial": "jest --runInBand",
-    "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand"
+    "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
+    "build:prod": "node scripts/prepare-production.js && cd android && ./gradlew bundleRelease",
+    "build:prod:windows": "node scripts/prepare-production.js && cd android && .\\gradlew.bat bundleRelease"
   },
   "dependencies": {
     "@notifee/react-native": "^9.1.8",
