@@ -22,7 +22,99 @@ This repo is configured for automated deployment to Google Play Store via GitHub
 
 ## Step-by-Step Setup
 
-### 1. Generate Release Keystore (5 minutes)
+### 1. Create App in Google Play Console (10 minutes)
+
+You should do this first to establish your app.
+
+#### A. Create the App
+
+1. Go to [Google Play Console](https://play.google.com/console)
+2. Click **"Create app"** button
+3. Fill in the app details:
+
+**App details**:
+- **App name**: `Kids Guard - Parental Control` (or your preferred name)
+- **Default language**: English (United States)
+- **App or game**: App
+- **Free or paid**: Free
+
+**Declarations**:
+- ✅ **App policy**: Check "I confirm this app complies with Google Play's policies"
+- ✅ **US export laws**: Check "I confirm this app complies with US export laws"
+
+4. Click **"Create app"**
+
+#### B. Complete Required Sections
+
+After creating the app, you'll see a dashboard. Complete these required sections:
+
+**1. App access (under Policy)**:
+- Select: **All or some functionality is restricted**
+- Reason: Requires parent verification with PIN
+- Click **Save**
+
+**2. Ads (under Policy)**:
+- Select: **Yes, my app contains ads**
+- Click **Save**
+
+**3. Content ratings (under Policy)**:
+- Click **Start questionnaire**
+- Select category: **Utility, productivity, communication, or other**
+- Answer questions (all "No" for parental control app)
+- Get rating
+- Click **Submit**
+
+**4. Target audience and content (under Policy)**:
+- Click **Start**
+- **Target age**: Select **Parents** or **Ages 13+** (parental control apps are for parents)
+- **App designed specifically for children**: No
+- Click **Save**
+
+**5. Privacy policy**:
+- You need a privacy policy URL
+- **Temporary option**: Use a privacy policy generator:
+  - https://www.privacypolicygenerator.info
+  - https://app-privacy-policy-generator.firebaseapp.com
+- Host it (GitHub Pages, your website, etc.)
+- Add URL in Play Console
+- Click **Save**
+
+**6. App category and contact details (under Store presence)**:
+- **App category**: Tools
+- **Developer email**: Your email
+- **Developer phone** (optional): Your phone
+- **Developer website** (optional): Your website or GitHub repo
+- Click **Save**
+
+**7. Store listing (under Store presence)**:
+- **Short description** (80 chars max):
+  ```
+  Parental control app to lock device volume and brightness settings
+  ```
+- **Full description** (4000 chars max):
+  ```
+  Kids Guard - Parental Control helps parents manage their children's device settings.
+
+  Features:
+  • Lock volume at a safe level
+  • Control screen brightness
+  • PIN protection for parent settings
+  • Simple and easy to use
+
+  Perfect for parents who want to ensure their children's devices are set appropriately.
+  ```
+- You'll add **graphics** later (Step 5 below)
+- Click **Save draft**
+
+#### C. Note Your Package Name
+
+After creating the app, note your **package name**: `com.kidsguard`
+
+This is already set in your code at `android/app/build.gradle`.
+
+---
+
+### 2. Generate Release Keystore (5 minutes)
 
 #### Option A: Automated Script (Recommended for Windows)
 
@@ -67,7 +159,7 @@ Use the automated script to find it automatically.
 - Key password
 - `android\app\release.keystore` file (backup to secure location)
 
-### 2. Create Google Play Service Account (15 minutes)
+### 3. Create Google Play Service Account (15 minutes)
 
 **Important**: You need a Google Cloud project first!
 
@@ -126,7 +218,7 @@ Use the automated script to find it automatically.
 
 **Detailed guide**: [GOOGLE_PLAY_DEPLOYMENT.md](./GOOGLE_PLAY_DEPLOYMENT.md#step-4-create-a-service-account-for-cicd)
 
-### 3. Configure GitHub Secrets (5 minutes)
+### 4. Configure GitHub Secrets (5 minutes)
 
 Go to your repo > **Settings** > **Secrets and variables** > **Actions**
 
@@ -160,7 +252,7 @@ Your key password
 #### d. GOOGLE_PLAY_SERVICE_ACCOUNT_JSON
 Copy entire contents of service account JSON file
 
-### 4. Prepare App Assets (15 minutes)
+### 5. Prepare App Assets (15 minutes)
 
 Download or create:
 - **App icon** (512x512 PNG)
@@ -173,7 +265,7 @@ Download or create:
 
 **Guide**: [APP_ICONS_GUIDE.md](./APP_ICONS_GUIDE.md)
 
-### 5. Complete Play Console Listing (30 minutes)
+### 6. Upload Graphics to Store Listing
 
 In [Play Console](https://play.google.com/console), complete:
 
@@ -189,7 +281,7 @@ In [Play Console](https://play.google.com/console), complete:
 
 3. **Countries/regions**: Select distribution countries
 
-### 6. First Deployment (Manual)
+### 7. First Deployment (Manual)
 
 For the first release, manually upload AAB to establish the app:
 
@@ -206,7 +298,7 @@ Upload AAB:
 4. Add release notes
 5. Review and start rollout
 
-### 7. Automated Deployments
+### 8. Automated Deployments
 
 After first manual upload, use GitHub Actions for all future releases:
 
