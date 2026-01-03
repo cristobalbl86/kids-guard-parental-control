@@ -34,6 +34,12 @@ local.properties
 *.keystore
 !debug.keystore
 
+# Release signing (sensitive)
+android/app/release.keystore
+android/gradle.properties
+keystore.base64.txt
+google-play-service-account.json
+
 # node.js
 #
 node_modules/
