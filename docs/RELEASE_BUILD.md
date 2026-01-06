@@ -1,28 +1,62 @@
-# Building a Release APK
+# Building a Release APK/AAB
 
-This guide explains how to build a release APK for the Kids Guard app.
+This guide explains how to build a release APK or AAB for the Kids Guard app.
 
 ## Prerequisites
 
 - Node.js 18+
-- Android Studio with Android SDK (API 33+)
+- Android Studio with Android SDK (API 35+)
 - React Native development environment configured
+- Release keystore generated
 
-## Quick Build (Using Debug Signing)
+## Important: API Level Requirement
 
-The current setup uses the debug keystore for release builds, which is suitable for testing but **not recommended for Google Play Store submission**.
+Google Play requires apps to target **API level 35** (Android 15).
+
+The app is already configured for API 35 in `android/build.gradle`:
+```gradle
+compileSdkVersion = 35
+targetSdkVersion = 35
+```
+
+## Quick Build for Play Store
+
+### Step 1: Configure Signing
+
+Create `android/gradle.properties` with your keystore passwords:
+
+```properties
+RELEASE_STORE_PASSWORD=your_keystore_password
+RELEASE_KEY_PASSWORD=your_key_password
+```
+
+**Security**: This file is in `.gitignore` and won't be committed.
+
+### Step 2: Set Production Config
+
+```bash
+# Set USE_TEST_ADS to false
+node scripts/prepare-production.js
+```
+
+### Step 3: Build AAB (Recommended for Play Store)
 
 ```bash
 # From project root
 cd android
-.\gradlew.bat assembleRelease   # Windows
-./gradlew assembleRelease       # macOS/Linux
+.\gradlew.bat clean              # Windows
+.\gradlew.bat bundleRelease      # Windows
+
+./gradlew clean                  # macOS/Linux
+./gradlew bundleRelease          # macOS/Linux
 ```
 
-The APK will be generated at:
+The AAB will be generated at:
 ```
-android/app/build/outputs/apk/release/app-release.apk
+android/app/build/outputs/bundle/release/app-release.aab
 ```
+
+**Why AAB?** Google Play requires AAB format for new apps. AAB is smaller and optimized per device.
 
 ## Production Build (With Custom Keystore)
 
