@@ -20,10 +20,15 @@ Complete documentation for building, testing, and deploying the Kids Guard paren
 
 If you're deploying to Google Play Store for the first time:
 
-1. **Start here**: [DEPLOYMENT_QUICKSTART.md](./DEPLOYMENT_QUICKSTART.md)
-   - Minimum steps to get deployed
-   - Step-by-step checklist
-   - Takes ~60 minutes total
+1. **Manual Deployment** (Recommended): [MANUAL_DEPLOYMENT.md](./MANUAL_DEPLOYMENT.md)
+   - Complete step-by-step guide
+   - No CI/CD setup required
+   - Get your app live in 1-2 days
+
+2. **Automated Deployment** (Advanced): [DEPLOYMENT_QUICKSTART.md](./DEPLOYMENT_QUICKSTART.md)
+   - GitHub Actions CI/CD setup
+   - Requires service account configuration
+   - Best for frequent releases
 
 2. **Need more details?**: [GOOGLE_PLAY_DEPLOYMENT.md](./GOOGLE_PLAY_DEPLOYMENT.md)
    - Complete Play Console setup

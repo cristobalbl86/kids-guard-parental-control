@@ -283,20 +283,45 @@ In [Play Console](https://play.google.com/console), complete:
 
 ### 7. First Deployment (Manual)
 
-For the first release, manually upload AAB to establish the app:
+**📖 Complete Manual Deployment Guide**: [MANUAL_DEPLOYMENT.md](./MANUAL_DEPLOYMENT.md)
 
-```bash
-# Build production AAB locally
-npm run build:prod:windows  # Windows
-npm run build:prod          # macOS/Linux
+#### Quick Steps:
+
+**A. Configure Signing** - Create `android/gradle.properties`:
+```properties
+RELEASE_STORE_PASSWORD=your_keystore_password
+RELEASE_KEY_PASSWORD=your_key_password
 ```
 
-Upload AAB:
-1. Play Console > **Testing** > **Internal testing**
-2. Create new release
-3. Upload: `android/app/build/outputs/bundle/release/app-release.aab`
-4. Add release notes
-5. Review and start rollout
+**B. Build AAB**:
+```powershell
+# Windows
+node scripts/prepare-production.js
+cd android
+.\gradlew.bat clean
+.\gradlew.bat bundleRelease
+```
+
+**C. Upload to Internal Testing** (mandatory for first release):
+1. Play Console → Testing → Internal testing
+2. Add yourself as tester (required)
+3. Create release → Upload `app-release.aab`
+4. Add release notes → Review → Start rollout
+
+**D. Wait for Approval** (1-2 days typically)
+
+**E. Promote to Production**:
+1. After approval, go to Production track
+2. Promote the internal release
+3. Select countries and rollout percentage
+4. Submit for production review (3-7 days)
+
+**⚠️ Important Notes**:
+- Internal testing is **mandatory** for first release
+- App targets **API level 35** (already configured)
+- After first approval, future releases can go directly to production
+
+**Full guide**: [MANUAL_DEPLOYMENT.md](./MANUAL_DEPLOYMENT.md)
 
 ### 8. Automated Deployments
 
