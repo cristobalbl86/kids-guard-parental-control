@@ -6,6 +6,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
@@ -32,7 +33,14 @@ public class EnforcementService extends Service {
         Notification notification = createNotification();
 
         // Start as foreground service
-        startForeground(NOTIFICATION_ID, notification);
+        // On Android 14+ (API 34+), we must specify the foreground service type
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+            Log.d(TAG, "Started foreground service with SPECIAL_USE type (Android 14+)");
+        } else {
+            startForeground(NOTIFICATION_ID, notification);
+            Log.d(TAG, "Started foreground service (Android < 14)");
+        }
 
         // Return START_STICKY to ensure the service restarts if killed by the system
         return START_STICKY;
