@@ -84,7 +84,13 @@
     "permissionTitle": "Permission Required",
     "permissionMessage": "To control system brightness, this app needs permission to modify system settings. Please grant this permission in the next screen.",
     "permissionButton": "Open Settings",
-    "permissionSuccess": "Brightness permission granted. Settings have been applied."
+    "permissionSuccess": "Brightness permission granted. Settings have been applied.",
+    "permissionDenied": "Cannot lock brightness without permission to modify system settings. Please allow the permission to enable brightness lock."
+  },
+  "permissions": {
+    "notificationTitle": "Notification Permission Required",
+    "notificationMessage": "Kids Guard needs notification permission to keep parental controls active in the background. This ensures volume and brightness remain locked even when the app is minimized.",
+    "notificationButton": "Allow"
   },
   "pinChange": {
     "titleCurrent": "Enter Current PIN",

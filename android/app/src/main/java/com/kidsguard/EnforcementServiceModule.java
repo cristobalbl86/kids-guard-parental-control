@@ -38,17 +38,30 @@ public class EnforcementServiceModule extends ReactContextBaseJavaModule {
 
             Intent serviceIntent = new Intent(reactContext, EnforcementService.class);
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                reactContext.startForegroundService(serviceIntent);
-            } else {
-                reactContext.startService(serviceIntent);
-            }
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    reactContext.startForegroundService(serviceIntent);
+                } else {
+                    reactContext.startService(serviceIntent);
+                }
 
-            serviceRunning = true;
-            Log.d(TAG, "Enforcement service started");
-            promise.resolve(true);
+                serviceRunning = true;
+                Log.d(TAG, "Enforcement service started successfully");
+                promise.resolve(true);
+            } catch (SecurityException se) {
+                // This can happen on Android 13+ if POST_NOTIFICATIONS permission is not granted
+                Log.w(TAG, "SecurityException starting foreground service - likely missing POST_NOTIFICATIONS permission on Android 13+", se);
+                serviceRunning = false;
+                promise.reject("PERMISSION_DENIED", "Cannot start foreground service. POST_NOTIFICATIONS permission may be required on Android 13+: " + se.getMessage());
+            } catch (IllegalStateException ise) {
+                // This can happen if the app is in the background and can't start a foreground service
+                Log.w(TAG, "IllegalStateException starting foreground service - app may be in background", ise);
+                serviceRunning = false;
+                promise.reject("BACKGROUND_RESTRICTION", "Cannot start foreground service from background: " + ise.getMessage());
+            }
         } catch (Exception e) {
-            Log.e(TAG, "Error starting service", e);
+            Log.e(TAG, "Unexpected error starting service", e);
+            serviceRunning = false;
             promise.reject("ERROR", "Failed to start enforcement service: " + e.getMessage());
         }
     }

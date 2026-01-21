@@ -24,6 +24,7 @@ public class VolumeControlPackage implements ReactPackage {
         modules.add(new VolumeControlModule(reactContext));
         modules.add(new BrightnessControlModule(reactContext));
         modules.add(new EnforcementServiceModule(reactContext));
+        modules.add(new PermissionsModule(reactContext));
 
         return modules;
     }
