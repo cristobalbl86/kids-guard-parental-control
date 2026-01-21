@@ -27,6 +27,7 @@ import {theme} from './src/utils/theme';
 import {initializeVolumeControl} from './src/utils/volumeControl';
 import {initializeBrightnessControl} from './src/utils/brightnessControl';
 import {initializeAdMob, showInterstitialIfEligible} from './src/utils/admobControl';
+import {requestPostNotificationsPermission} from './src/utils/permissions';
 
 const Stack = createStackNavigator();
 
@@ -79,6 +80,10 @@ export default function App() {
       // Initialize control modules if setup is complete
       if (!firstLaunch) {
         try {
+          // Request POST_NOTIFICATIONS permission on Android 13+ before initializing controls
+          // This is needed for the foreground service that keeps enforcement active
+          await requestPostNotificationsPermission();
+
           await initializeVolumeControl();
           await initializeBrightnessControl();
           await initializeAdMob();
@@ -101,15 +106,18 @@ export default function App() {
     setIsSetupComplete(true);
     setIsFirstLaunch(false);
 
-    // Initialize AdMob after setup completes
+    // Request notification permission and initialize modules after setup completes
     try {
+      // Request POST_NOTIFICATIONS permission on Android 13+ before initializing controls
+      await requestPostNotificationsPermission();
+
       await initializeAdMob();
       // Show ad after a short delay to let the UI settle
       setTimeout(async () => {
         await showInterstitialIfEligible();
       }, 2000);
     } catch (error) {
-      console.warn('Failed to initialize AdMob after setup:', error);
+      console.warn('Failed to initialize after setup:', error);
     }
   };
 

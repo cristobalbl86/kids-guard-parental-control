@@ -204,17 +204,65 @@ export default function ParentSettingsScreen({ navigation }) {
 
   const handleBrightnessLockToggle = async () => {
     const newLocked = !brightnessLocked;
+
+    // If locking brightness, check and request permission first
+    if (newLocked && Platform.OS === 'android') {
+      const hasPermission = await checkWriteSettingsPermission();
+      if (!hasPermission) {
+        // Show alert and request permission
+        Alert.alert(
+          t('parentSettings.permissionTitle'),
+          t('parentSettings.permissionMessage'),
+          [
+            {
+              text: t('common.cancel'),
+              style: 'cancel',
+              onPress: () => {
+                // Don't lock if permission is denied
+                console.log('User cancelled permission request');
+              }
+            },
+            {
+              text: t('parentSettings.permissionButton'),
+              onPress: async () => {
+                await requestWriteSettingsPermission();
+                // After opening settings, wait and check if permission was granted
+                setTimeout(async () => {
+                  const permissionGranted = await checkWriteSettingsPermission();
+                  if (permissionGranted) {
+                    // Permission granted, proceed with locking
+                    await proceedWithBrightnessLock(newLocked);
+                  } else {
+                    Alert.alert(
+                      t('alerts.error'),
+                      t('parentSettings.permissionDenied') || 'Cannot lock brightness without permission to modify system settings'
+                    );
+                  }
+                }, 2000);
+              },
+            },
+          ]
+        );
+        return; // Exit early, will be handled by permission callback
+      }
+    }
+
+    // Permission already granted or unlocking, proceed
+    await proceedWithBrightnessLock(newLocked);
+  };
+
+  const proceedWithBrightnessLock = async (newLocked) => {
     setBrightnessLocked(newLocked);
 
     // Save immediately
     setSaving(true);
-    
+
     // If unlocking, load current system brightness
     if (!newLocked) {
       const currentBrightness = await getBrightness();
       setBrightnessValue(currentBrightness);
     }
-    
+
     const success = await updateBrightnessSettings(brightnessValue, newLocked);
     setSaving(false);
 

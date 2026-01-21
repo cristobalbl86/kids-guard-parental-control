@@ -15,6 +15,7 @@ const startService = async () => {
     return true;
   } catch (error) {
     console.error('[EnforcementService] Error starting service:', error);
+    console.warn('[EnforcementService] Service failed to start. This may be due to missing notification permission on Android 13+. Controls will still work but may be less reliable in the background.');
     return false;
   }
 };

@@ -84,7 +84,13 @@
     "permissionTitle": "Permiso Requerido",
     "permissionMessage": "Para controlar el brillo del sistema, esta aplicación necesita permiso para modificar la configuración del sistema. Por favor, otorga este permiso en la siguiente pantalla.",
     "permissionButton": "Abrir Configuración",
-    "permissionSuccess": "Permiso de brillo otorgado. La configuración ha sido aplicada."
+    "permissionSuccess": "Permiso de brillo otorgado. La configuración ha sido aplicada.",
+    "permissionDenied": "No se puede bloquear el brillo sin permiso para modificar la configuración del sistema. Por favor, permite el permiso para habilitar el bloqueo de brillo."
+  },
+  "permissions": {
+    "notificationTitle": "Permiso de Notificación Requerido",
+    "notificationMessage": "Kids Guard necesita permiso de notificación para mantener activos los controles parentales en segundo plano. Esto asegura que el volumen y el brillo permanezcan bloqueados incluso cuando la aplicación está minimizada.",
+    "notificationButton": "Permitir"
   },
   "pinChange": {
     "titleCurrent": "Ingresar PIN Actual",
