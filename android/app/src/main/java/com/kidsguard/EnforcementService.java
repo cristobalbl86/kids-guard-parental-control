@@ -7,6 +7,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ContentResolver;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ServiceInfo;
 import android.content.res.Resources;
 import android.database.ContentObserver;
@@ -23,6 +24,12 @@ public class EnforcementService extends Service {
     private static final String TAG = "EnforcementService";
     private static final String CHANNEL_ID = "kids_guard_enforcement";
     private static final int NOTIFICATION_ID = 1001;
+    private static final long BRIGHTNESS_ENFORCE_INTERVAL_MS = 5000;
+
+    // Persistence keys so brightness enforcement survives service restarts
+    private static final String PREFS_NAME = "enforcement_prefs";
+    private static final String KEY_BRIGHTNESS_ENFORCING = "brightness_enforcing";
+    private static final String KEY_BRIGHTNESS_VALUE = "brightness_value";
 
     // Intent action constants
     public static final String ACTION_START = "com.kidsguard.ACTION_START";
@@ -38,6 +45,15 @@ public class EnforcementService extends Service {
     private int enforcedBrightness = -1;
     private boolean isBrightnessEnforcing = false;
     private Handler mainHandler;
+    private final Runnable periodicEnforceRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (isBrightnessEnforcing) {
+                enforceBrightness();
+                mainHandler.postDelayed(this, BRIGHTNESS_ENFORCE_INTERVAL_MS);
+            }
+        }
+    };
 
     // Brightness range
     private boolean brightnessRangeInitialized = false;
@@ -50,6 +66,9 @@ public class EnforcementService extends Service {
         Log.d(TAG, "EnforcementService created");
         mainHandler = new Handler(Looper.getMainLooper());
         createNotificationChannel();
+
+        // Restore any previously enforced brightness if the service was restarted by the system
+        restoreBrightnessStateIfNeeded();
     }
 
     @Override
@@ -57,6 +76,7 @@ public class EnforcementService extends Service {
         Log.d(TAG, "EnforcementService onStartCommand");
 
         // Handle intent actions
+        boolean handledIntent = false;
         if (intent != null) {
             String action = intent.getAction();
             if (action != null) {
@@ -65,9 +85,11 @@ public class EnforcementService extends Service {
                         int brightness = intent.getIntExtra(EXTRA_BRIGHTNESS_VALUE, -1);
                         boolean enforcing = intent.getBooleanExtra(EXTRA_BRIGHTNESS_ENFORCING, false);
                         updateBrightnessEnforcement(brightness, enforcing);
+                        handledIntent = true;
                         break;
                     case ACTION_STOP_BRIGHTNESS:
                         stopBrightnessEnforcement();
+                        handledIntent = true;
                         break;
                     case ACTION_START:
                     default:
@@ -76,10 +98,16 @@ public class EnforcementService extends Service {
                             int initBrightness = intent.getIntExtra(EXTRA_BRIGHTNESS_VALUE, -1);
                             boolean initEnforcing = intent.getBooleanExtra(EXTRA_BRIGHTNESS_ENFORCING, false);
                             updateBrightnessEnforcement(initBrightness, initEnforcing);
+                            handledIntent = true;
                         }
                         break;
                 }
             }
+        }
+
+        // If the system restarted us with no extras, restore the last known brightness lock
+        if (!handledIntent) {
+            restoreBrightnessStateIfNeeded();
         }
 
         // Create notification
@@ -120,6 +148,9 @@ public class EnforcementService extends Service {
             enforcedBrightness = brightness;
             isBrightnessEnforcing = true;
 
+            // Persist the state so it survives service recreation
+            persistBrightnessState(true, brightness);
+
             // Set initial brightness
             setBrightness(brightness);
 
@@ -133,6 +164,7 @@ public class EnforcementService extends Service {
     private void stopBrightnessEnforcement() {
         isBrightnessEnforcing = false;
         enforcedBrightness = -1;
+        persistBrightnessState(false, -1);
         stopBrightnessMonitoring();
         Log.d(TAG, "Brightness enforcement stopped");
     }
@@ -169,6 +201,10 @@ public class EnforcementService extends Service {
             brightnessObserver
         );
 
+        // Always enforce periodically to stay reliable in background
+        mainHandler.removeCallbacks(periodicEnforceRunnable);
+        mainHandler.postDelayed(periodicEnforceRunnable, BRIGHTNESS_ENFORCE_INTERVAL_MS);
+
         Log.d(TAG, "Brightness monitoring started in foreground service");
     }
 
@@ -178,6 +214,8 @@ public class EnforcementService extends Service {
             brightnessObserver = null;
             Log.d(TAG, "Brightness monitoring stopped");
         }
+
+        mainHandler.removeCallbacks(periodicEnforceRunnable);
     }
 
     private void enforceBrightness() {
@@ -377,5 +415,35 @@ public class EnforcementService extends Service {
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .build();
+    }
+
+    // ============ Persistence Helpers ============
+
+    private void persistBrightnessState(boolean enforcing, int brightnessValue) {
+        try {
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+            prefs.edit()
+                .putBoolean(KEY_BRIGHTNESS_ENFORCING, enforcing)
+                .putInt(KEY_BRIGHTNESS_VALUE, brightnessValue)
+                .apply();
+            Log.d(TAG, "Persisted brightness state -> enforcing=" + enforcing + ", value=" + brightnessValue);
+        } catch (Exception e) {
+            Log.w(TAG, "Failed to persist brightness state", e);
+        }
+    }
+
+    private void restoreBrightnessStateIfNeeded() {
+        try {
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+            boolean savedEnforcing = prefs.getBoolean(KEY_BRIGHTNESS_ENFORCING, false);
+            int savedValue = prefs.getInt(KEY_BRIGHTNESS_VALUE, -1);
+
+            if (savedEnforcing && savedValue >= 0 && !isBrightnessEnforcing) {
+                Log.d(TAG, "Restoring persisted brightness enforcement at " + savedValue + "%");
+                updateBrightnessEnforcement(savedValue, true);
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Failed to restore brightness state", e);
+        }
     }
 }
