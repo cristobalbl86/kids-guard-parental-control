@@ -71,11 +71,11 @@ export const startBrightnessMonitoring = async (targetBrightnessPercent) => {
     enforcedBrightness = targetBrightnessPercent;
     isEnforcing = true;
 
-    // Start enforcement using native module
+    // Start enforcement using native module (for in-app enforcement)
     await BrightnessControl.startEnforcing(targetBrightnessPercent);
 
-    // Notify enforcement service that brightness enforcement is active
-    await notifyBrightnessEnforcement(true);
+    // Notify enforcement service with brightness value (for background enforcement)
+    await notifyBrightnessEnforcement(true, targetBrightnessPercent);
 
     console.log(`Brightness monitoring started at ${targetBrightnessPercent}%`);
     return true;
