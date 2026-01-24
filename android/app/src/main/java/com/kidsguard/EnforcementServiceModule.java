@@ -91,4 +91,69 @@ public class EnforcementServiceModule extends ReactContextBaseJavaModule {
     public void isServiceRunning(Promise promise) {
         promise.resolve(serviceRunning);
     }
+
+    @ReactMethod
+    public void updateBrightnessEnforcement(int brightness, boolean enforcing, Promise promise) {
+        try {
+            if (!serviceRunning) {
+                Log.d(TAG, "Service not running, starting it first");
+                // Start the service with brightness enforcement
+                Intent serviceIntent = new Intent(reactContext, EnforcementService.class);
+                serviceIntent.setAction(EnforcementService.ACTION_UPDATE_BRIGHTNESS);
+                serviceIntent.putExtra(EnforcementService.EXTRA_BRIGHTNESS_VALUE, brightness);
+                serviceIntent.putExtra(EnforcementService.EXTRA_BRIGHTNESS_ENFORCING, enforcing);
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    reactContext.startForegroundService(serviceIntent);
+                } else {
+                    reactContext.startService(serviceIntent);
+                }
+                serviceRunning = true;
+            } else {
+                // Service already running, send update intent
+                Intent updateIntent = new Intent(reactContext, EnforcementService.class);
+                updateIntent.setAction(EnforcementService.ACTION_UPDATE_BRIGHTNESS);
+                updateIntent.putExtra(EnforcementService.EXTRA_BRIGHTNESS_VALUE, brightness);
+                updateIntent.putExtra(EnforcementService.EXTRA_BRIGHTNESS_ENFORCING, enforcing);
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    reactContext.startForegroundService(updateIntent);
+                } else {
+                    reactContext.startService(updateIntent);
+                }
+            }
+
+            Log.d(TAG, "Brightness enforcement updated: brightness=" + brightness + ", enforcing=" + enforcing);
+            promise.resolve(true);
+        } catch (Exception e) {
+            Log.e(TAG, "Error updating brightness enforcement", e);
+            promise.reject("ERROR", "Failed to update brightness enforcement: " + e.getMessage());
+        }
+    }
+
+    @ReactMethod
+    public void stopBrightnessEnforcement(Promise promise) {
+        try {
+            if (!serviceRunning) {
+                Log.d(TAG, "Service not running, nothing to stop");
+                promise.resolve(true);
+                return;
+            }
+
+            Intent stopIntent = new Intent(reactContext, EnforcementService.class);
+            stopIntent.setAction(EnforcementService.ACTION_STOP_BRIGHTNESS);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                reactContext.startForegroundService(stopIntent);
+            } else {
+                reactContext.startService(stopIntent);
+            }
+
+            Log.d(TAG, "Brightness enforcement stopped");
+            promise.resolve(true);
+        } catch (Exception e) {
+            Log.e(TAG, "Error stopping brightness enforcement", e);
+            promise.reject("ERROR", "Failed to stop brightness enforcement: " + e.getMessage());
+        }
+    }
 }
