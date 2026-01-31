@@ -5,7 +5,8 @@
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <!-- FOREGROUND_SERVICE_SPECIAL_USE is only available on Android 14+ (API 34+) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" android:minSdkVersion="34" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
@@ -38,14 +39,12 @@
       </activity>
 
       <!-- Foreground Service for keeping enforcement active in background -->
+      <!-- Note: foregroundServiceType is set at runtime in EnforcementService.java
+           to support both Android 11+ (no type) and Android 14+ (specialUse type) -->
       <service
         android:name=".EnforcementService"
         android:enabled="true"
-        android:exported="false"
-        android:foregroundServiceType="specialUse">
-        <property
-          android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-          android:value="parental_control" />
+        android:exported="false">
       </service>
     </application>
 </manifest>
