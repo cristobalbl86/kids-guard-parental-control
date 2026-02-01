@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert, Platform, TextInput, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, Platform, ActivityIndicator } from 'react-native';
 import { Button, Text, Card, Switch, IconButton, Divider } from 'react-native-paper';
 import { theme, statusColors } from '../utils/theme';
 import { getAllSettings, changePIN } from '../utils/storage';
@@ -14,6 +14,12 @@ export default function ParentSettingsScreen({ navigation }) {
   const [volumeLocked, setVolumeLocked] = useState(false);
   const [brightnessValue, setBrightnessValue] = useState(50);
   const [brightnessLocked, setBrightnessLocked] = useState(false);
+  const STEP_VALUE = 25;
+
+  const snapToStep = (value) => {
+    const clamped = Math.max(0, Math.min(100, Math.round(value)));
+    return Math.round(clamped / STEP_VALUE) * STEP_VALUE;
+  };
   const [showPINDialog, setShowPINDialog] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
@@ -91,10 +97,10 @@ export default function ParentSettingsScreen({ navigation }) {
         if (!settings.volume.locked) {
           const currentVolume = await getVolume();
           console.log('[loadSettings] Volume unlocked, got current:', currentVolume);
-          setVolumeValue(currentVolume);
+          setVolumeValue(snapToStep(currentVolume));
         } else {
           console.log('[loadSettings] Volume locked, using stored:', settings.volume.volume);
-          setVolumeValue(settings.volume.volume);
+          setVolumeValue(snapToStep(settings.volume.volume));
         }
         setVolumeLocked(settings.volume.locked);
       } else {
@@ -111,10 +117,10 @@ export default function ParentSettingsScreen({ navigation }) {
           console.log('[loadSettings] Brightness unlocked, calling getBrightness()...');
           const currentBrightness = await getBrightness();
           console.log('[loadSettings] Got current brightness:', currentBrightness);
-          setBrightnessValue(currentBrightness);
+          setBrightnessValue(snapToStep(currentBrightness));
         } else {
           console.log('[loadSettings] Brightness locked, using stored:', settings.brightness.brightness);
-          setBrightnessValue(settings.brightness.brightness);
+          setBrightnessValue(snapToStep(settings.brightness.brightness));
         }
         setBrightnessLocked(settings.brightness.locked);
       } else {
@@ -131,7 +137,8 @@ export default function ParentSettingsScreen({ navigation }) {
         const hasPermission = await checkWriteSettingsPermission();
         if (hasPermission) {
           const { setBrightness } = require('../utils/brightnessControl');
-          await setBrightness(settings.brightness.brightness);
+          const snappedBrightness = snapToStep(settings.brightness.brightness);
+          await setBrightness(snappedBrightness);
           console.log('Reapplied brightness on load');
         }
       }
@@ -144,7 +151,7 @@ export default function ParentSettingsScreen({ navigation }) {
   };
 
   const handleVolumeChange = (value) => {
-    setVolumeValue(Math.round(value));
+    setVolumeValue(snapToStep(value));
   };
 
   const handleVolumeLockToggle = async () => {
@@ -157,10 +164,12 @@ export default function ParentSettingsScreen({ navigation }) {
     // If unlocking, load current system volume
     if (!newLocked) {
       const currentVolume = await getVolume();
-      setVolumeValue(currentVolume);
+      setVolumeValue(snapToStep(currentVolume));
     }
-    
-    const success = await updateVolumeSettings(volumeValue, newLocked);
+
+    const snappedVolume = snapToStep(volumeValue);
+    setVolumeValue(snappedVolume);
+    const success = await updateVolumeSettings(snappedVolume, newLocked);
     setSaving(false);
 
     if (success) {
@@ -182,12 +191,14 @@ export default function ParentSettingsScreen({ navigation }) {
 
     // Import setVolume dynamically
     const { setVolume } = require('../utils/volumeControl');
+    const snappedVolume = snapToStep(volumeValue);
+    setVolumeValue(snappedVolume);
 
     // First, actually set the device volume
-    await setVolume(volumeValue);
+    await setVolume(snappedVolume);
 
     // Then save settings and update monitoring
-    const success = await updateVolumeSettings(volumeValue, volumeLocked);
+    const success = await updateVolumeSettings(snappedVolume, volumeLocked);
     setSaving(false);
 
     if (success) {
@@ -199,7 +210,7 @@ export default function ParentSettingsScreen({ navigation }) {
   };
 
   const handleBrightnessChange = (value) => {
-    setBrightnessValue(Math.round(value));
+    setBrightnessValue(snapToStep(value));
   };
 
   const handleBrightnessLockToggle = async () => {
@@ -260,10 +271,12 @@ export default function ParentSettingsScreen({ navigation }) {
     // If unlocking, load current system brightness
     if (!newLocked) {
       const currentBrightness = await getBrightness();
-      setBrightnessValue(currentBrightness);
+      setBrightnessValue(snapToStep(currentBrightness));
     }
 
-    const success = await updateBrightnessSettings(brightnessValue, newLocked);
+    const snappedBrightness = snapToStep(brightnessValue);
+    setBrightnessValue(snappedBrightness);
+    const success = await updateBrightnessSettings(snappedBrightness, newLocked);
     setSaving(false);
 
     if (success) {
@@ -285,12 +298,14 @@ export default function ParentSettingsScreen({ navigation }) {
 
     // Import setBrightness dynamically
     const { setBrightness } = require('../utils/brightnessControl');
+    const snappedBrightness = snapToStep(brightnessValue);
+    setBrightnessValue(snappedBrightness);
 
     // First, actually set the device brightness
-    await setBrightness(brightnessValue);
+    await setBrightness(snappedBrightness);
 
     // Then save settings and update monitoring
-    const success = await updateBrightnessSettings(brightnessValue, brightnessLocked);
+    const success = await updateBrightnessSettings(snappedBrightness, brightnessLocked);
     setSaving(false);
 
     if (success) {
@@ -354,26 +369,14 @@ export default function ParentSettingsScreen({ navigation }) {
                 iconColor={theme.colors.primary}
                 style={styles.incrementButton}
                 onPress={() => {
-                  const newValue = Math.max(0, value - 1);
+                  const newValue = Math.max(0, value - STEP_VALUE);
                   onValueChange(newValue);
                 }}
                 disabled={saving || value <= 0}
               />
               
               <View style={styles.inputWrapper}>
-                <TextInput
-                  style={styles.input}
-                  value={String(value)}
-                  onChangeText={(text) => {
-                    const numValue = parseInt(text) || 0;
-                    const clampedValue = Math.min(100, Math.max(0, numValue));
-                    onValueChange(clampedValue);
-                  }}
-                  keyboardType="numeric"
-                  maxLength={3}
-                  editable={!saving}
-                  selectTextOnFocus
-                />
+                <Text style={styles.input}>{String(value)}</Text>
                 <Text style={styles.percentSymbol}>%</Text>
               </View>
               
@@ -383,7 +386,7 @@ export default function ParentSettingsScreen({ navigation }) {
                 iconColor={theme.colors.primary}
                 style={styles.incrementButton}
                 onPress={() => {
-                  const newValue = Math.min(100, value + 1);
+                  const newValue = Math.min(100, value + STEP_VALUE);
                   onValueChange(newValue);
                 }}
                 disabled={saving || value >= 100}
