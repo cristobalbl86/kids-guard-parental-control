@@ -9,7 +9,6 @@ import android.content.ContentResolver;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ServiceInfo;
-import android.content.res.Resources;
 import android.database.ContentObserver;
 import android.os.Build;
 import android.os.Handler;
@@ -25,6 +24,16 @@ public class EnforcementService extends Service {
     private static final String CHANNEL_ID = "kids_guard_enforcement";
     private static final int NOTIFICATION_ID = 1001;
     private static final long BRIGHTNESS_ENFORCE_INTERVAL_MS = 5000;
+    private static final String SCREEN_BRIGHTNESS_FLOAT = "screen_brightness_float";
+
+    // HLG (Hybrid Log-Gamma) constants from AOSP BrightnessUtils.
+    // These define the standard curve Android uses to map between the
+    // brightness slider position (perceptual/gamma) and the underlying
+    // brightness float value (linear/physical).
+    private static final float HLG_R = 0.5f;
+    private static final float HLG_A = 0.17883277f;
+    private static final float HLG_B = 0.28466892f;
+    private static final float HLG_C = 0.55991073f;
 
     // Persistence keys so brightness enforcement survives service restarts
     private static final String PREFS_NAME = "enforcement_prefs";
@@ -55,10 +64,51 @@ public class EnforcementService extends Service {
         }
     };
 
-    // Brightness range
-    private boolean brightnessRangeInitialized = false;
-    private int brightnessMinimum = 0;
-    private int brightnessMaximum = 255;
+    // ============ HLG Brightness Conversion Methods ============
+
+    /**
+     * Convert slider/perceptual percentage (0-100) to linear brightness float (0.0-1.0).
+     * Matches AOSP BrightnessUtils.convertGammaToLinearFloat().
+     */
+    private static float sliderPercentToLinearFloat(int percent) {
+        float gamma = Math.max(0, Math.min(100, percent)) / 100.0f;
+
+        if (gamma <= 0) {
+            return 0.0f;
+        }
+
+        final float linear;
+        if (gamma <= HLG_R) {
+            linear = (gamma / HLG_R) * (gamma / HLG_R) / 12.0f;
+        } else {
+            linear = ((float) Math.exp((gamma - HLG_C) / HLG_A) + HLG_B) / 12.0f;
+        }
+
+        return Math.max(0.0f, Math.min(1.0f, linear));
+    }
+
+    /**
+     * Convert linear brightness float (0.0-1.0) to slider/perceptual percentage (0-100).
+     * Matches AOSP BrightnessUtils.convertLinearToGammaFloat().
+     */
+    private static int linearFloatToSliderPercent(float linear) {
+        float clampedLinear = Math.max(0, Math.min(1.0f, linear));
+
+        if (clampedLinear <= 0) {
+            return 0;
+        }
+
+        final float gamma;
+        if (clampedLinear <= 1.0f / 12.0f) {
+            gamma = (float) Math.sqrt(clampedLinear * 12.0f) * HLG_R;
+        } else {
+            gamma = HLG_A * (float) Math.log(12.0f * clampedLinear - HLG_B) + HLG_C;
+        }
+
+        return Math.round(Math.max(0.0f, Math.min(1.0f, gamma)) * 100.0f);
+    }
+
+    // ============ Service Lifecycle ============
 
     @Override
     public void onCreate() {
@@ -201,6 +251,15 @@ public class EnforcementService extends Service {
             brightnessObserver
         );
 
+        // On API 28+, also observe the float brightness setting for better detection
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            resolver.registerContentObserver(
+                Settings.System.getUriFor(SCREEN_BRIGHTNESS_FLOAT),
+                false,
+                brightnessObserver
+            );
+        }
+
         // Always enforce periodically to stay reliable in background
         mainHandler.removeCallbacks(periodicEnforceRunnable);
         mainHandler.postDelayed(periodicEnforceRunnable, BRIGHTNESS_ENFORCE_INTERVAL_MS);
@@ -238,26 +297,56 @@ public class EnforcementService extends Service {
                 Log.d(TAG, "Disabled auto-brightness");
             }
 
-            // Get current system brightness
-            int currentSystemBrightness = Settings.System.getInt(
-                resolver,
-                Settings.System.SCREEN_BRIGHTNESS
-            );
-
-            ensureBrightnessRangeInitialized();
-            int currentPercent = convertSystemValueToPercent(currentSystemBrightness);
+            // Read current brightness as perceptual percentage
+            int currentPercent;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                try {
+                    float currentLinear = Settings.System.getFloat(resolver, SCREEN_BRIGHTNESS_FLOAT);
+                    currentPercent = linearFloatToSliderPercent(currentLinear);
+                } catch (Settings.SettingNotFoundException e) {
+                    int currentInt = Settings.System.getInt(
+                        resolver,
+                        Settings.System.SCREEN_BRIGHTNESS
+                    );
+                    currentPercent = Math.round(currentInt * 100.0f / 255.0f);
+                }
+            } else {
+                int currentInt = Settings.System.getInt(
+                    resolver,
+                    Settings.System.SCREEN_BRIGHTNESS
+                );
+                currentPercent = Math.round(currentInt * 100.0f / 255.0f);
+            }
 
             // Check if brightness has changed significantly (more than 3% tolerance)
             if (Math.abs(currentPercent - enforcedBrightness) > 3) {
-                int targetSystemValue = convertPercentToSystemValue(enforcedBrightness);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    float enforcedLinear = sliderPercentToLinearFloat(enforcedBrightness);
 
-                Settings.System.putInt(
-                    resolver,
-                    Settings.System.SCREEN_BRIGHTNESS,
-                    targetSystemValue
-                );
+                    try {
+                        Settings.System.putFloat(resolver, SCREEN_BRIGHTNESS_FLOAT, enforcedLinear);
+                    } catch (Exception e) {
+                        Log.w(TAG, "Could not write float brightness during enforcement", e);
+                    }
 
-                Log.d(TAG, "Brightness enforced in service: " + currentPercent + "% -> " + enforcedBrightness + "% (system value: " + targetSystemValue + ")");
+                    int targetSystemValue = Math.round(enforcedLinear * 255.0f);
+                    Settings.System.putInt(
+                        resolver,
+                        Settings.System.SCREEN_BRIGHTNESS,
+                        targetSystemValue
+                    );
+
+                    Log.d(TAG, "Brightness enforced in service: " + currentPercent + "% -> " + enforcedBrightness + "% (linearFloat=" + enforcedLinear + ", int=" + targetSystemValue + ")");
+                } else {
+                    int targetSystemValue = Math.round(enforcedBrightness * 255.0f / 100.0f);
+                    Settings.System.putInt(
+                        resolver,
+                        Settings.System.SCREEN_BRIGHTNESS,
+                        targetSystemValue
+                    );
+
+                    Log.d(TAG, "Brightness enforced in service: " + currentPercent + "% -> " + enforcedBrightness + "% (int=" + targetSystemValue + ")");
+                }
             }
         } catch (Exception e) {
             Log.e(TAG, "Error enforcing brightness in service", e);
@@ -267,111 +356,41 @@ public class EnforcementService extends Service {
     private void setBrightness(int brightnessPercent) {
         try {
             ContentResolver resolver = getContentResolver();
+            int clampedPercent = Math.max(0, Math.min(100, brightnessPercent));
 
             // Disable auto-brightness
             Settings.System.putInt(resolver,
                 Settings.System.SCREEN_BRIGHTNESS_MODE,
                 Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL);
 
-            ensureBrightnessRangeInitialized();
-            int systemValue = convertPercentToSystemValue(brightnessPercent);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                // Android 9+: convert perceptual percent to linear float using HLG curve
+                float linearFloat = sliderPercentToLinearFloat(clampedPercent);
 
-            Settings.System.putInt(resolver,
-                Settings.System.SCREEN_BRIGHTNESS,
-                systemValue);
+                try {
+                    Settings.System.putFloat(resolver, SCREEN_BRIGHTNESS_FLOAT, linearFloat);
+                } catch (Exception e) {
+                    Log.w(TAG, "Could not write float brightness setting", e);
+                }
 
-            Log.d(TAG, "Brightness set to " + brightnessPercent + "% (system value: " + systemValue + ")");
+                int systemValue = Math.round(linearFloat * 255.0f);
+                Settings.System.putInt(resolver,
+                    Settings.System.SCREEN_BRIGHTNESS,
+                    systemValue);
+
+                Log.d(TAG, "Brightness set to " + clampedPercent + "% (linearFloat=" + linearFloat + ", int=" + systemValue + "/255)");
+            } else {
+                // Android 6-8: linear mapping to integer range
+                int systemValue = Math.round(clampedPercent * 255.0f / 100.0f);
+                Settings.System.putInt(resolver,
+                    Settings.System.SCREEN_BRIGHTNESS,
+                    systemValue);
+
+                Log.d(TAG, "Brightness set to " + clampedPercent + "% (int=" + systemValue + "/255)");
+            }
         } catch (Exception e) {
             Log.e(TAG, "Error setting brightness in service", e);
         }
-    }
-
-    // ============ Brightness Conversion Methods ============
-
-    private void ensureBrightnessRangeInitialized() {
-        if (brightnessRangeInitialized) {
-            return;
-        }
-
-        int min = 0;
-        int max = 255;
-
-        ContentResolver resolver = getContentResolver();
-
-        try {
-            min = Settings.System.getInt(resolver, "screen_brightness_min");
-        } catch (Settings.SettingNotFoundException | SecurityException ignored) {
-        }
-
-        try {
-            max = Settings.System.getInt(resolver, "screen_brightness_max");
-        } catch (Settings.SettingNotFoundException | SecurityException ignored) {
-        }
-
-        Resources res = getResources();
-
-        int resMinId = res.getIdentifier("config_screenBrightnessSettingMinimum", "integer", "android");
-        if (resMinId != 0) {
-            try {
-                min = res.getInteger(resMinId);
-            } catch (Resources.NotFoundException ignored) {
-            }
-        }
-
-        int resMaxId = res.getIdentifier("config_screenBrightnessSettingMaximum", "integer", "android");
-        if (resMaxId != 0) {
-            try {
-                max = res.getInteger(resMaxId);
-            } catch (Resources.NotFoundException ignored) {
-            }
-        }
-
-        if (max <= min) {
-            min = 0;
-            max = 255;
-        }
-
-        brightnessMinimum = Math.max(0, min);
-        brightnessMaximum = Math.max(brightnessMinimum + 1, max);
-        brightnessRangeInitialized = true;
-
-        Log.d(TAG, "Brightness range initialized: min=" + brightnessMinimum + ", max=" + brightnessMaximum);
-    }
-
-    private int convertPercentToSystemValue(int percent) {
-        ensureBrightnessRangeInitialized();
-
-        int clampedPercent = Math.max(0, Math.min(100, percent));
-        int range = brightnessMaximum - brightnessMinimum;
-
-        if (range <= 0) {
-            return Math.round(clampedPercent * 255.0f / 100.0f);
-        }
-
-        // Use quadratic curve for better perception matching (Gamma 2.0)
-        float normalizedPercent = clampedPercent / 100.0f;
-        float normalizedValue = normalizedPercent * normalizedPercent;
-
-        int systemValue = Math.round(brightnessMinimum + normalizedValue * range);
-        return Math.max(brightnessMinimum, Math.min(brightnessMaximum, systemValue));
-    }
-
-    private int convertSystemValueToPercent(int systemValue) {
-        ensureBrightnessRangeInitialized();
-
-        int clampedValue = Math.max(brightnessMinimum, Math.min(brightnessMaximum, systemValue));
-        int range = brightnessMaximum - brightnessMinimum;
-
-        if (range <= 0) {
-            float normalized = clampedValue / 255.0f;
-            return Math.round(normalized * 100.0f);
-        }
-
-        // Inverse of quadratic curve: percent = sqrt(normalizedValue)
-        float normalizedValue = (float)(clampedValue - brightnessMinimum) / range;
-        float normalizedPercent = (float)Math.sqrt(normalizedValue);
-
-        return Math.round(Math.max(0.0f, Math.min(1.0f, normalizedPercent)) * 100.0f);
     }
 
     // ============ Notification Methods ============

@@ -2,13 +2,13 @@ package com.kidsguard;
 
 import android.app.Activity;
 import android.content.ContentResolver;
+import android.os.Build;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.Window;
 import android.view.WindowManager;
 import android.database.ContentObserver;
 import android.os.Handler;
-import android.content.res.Resources;
 
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
@@ -23,13 +23,18 @@ import androidx.annotation.NonNull;
 
 public class BrightnessControlModule extends ReactContextBaseJavaModule {
     private static final String TAG = "BrightnessControl";
+    private static final String SCREEN_BRIGHTNESS_FLOAT = "screen_brightness_float";
     private final ReactApplicationContext reactContext;
     private ContentObserver brightnessObserver;
     private int enforcedBrightness = -1;
     private boolean isEnforcing = false;
-    private boolean brightnessRangeInitialized = false;
-    private int brightnessMinimum = 0;
-    private int brightnessMaximum = 255;
+
+    // HLG (Hybrid Log-Gamma) constants from AOSP BrightnessUtils.
+    // Used as a fallback if reflection to system BrightnessUtils fails.
+    private static final float HLG_R = 0.5f;
+    private static final float HLG_A = 0.17883277f;
+    private static final float HLG_B = 0.28466892f;
+    private static final float HLG_C = 0.55991073f;
 
     public BrightnessControlModule(ReactApplicationContext context) {
         super(context);
@@ -41,6 +46,142 @@ public class BrightnessControlModule extends ReactContextBaseJavaModule {
     public String getName() {
         return "BrightnessControl";
     }
+
+    // ============ Brightness Conversion Methods ============
+
+    private static float clamp01(float value) {
+        return Math.max(0.0f, Math.min(1.0f, value));
+    }
+
+    private static Float invokeBrightnessUtils(String methodName, float value) {
+        try {
+            Class<?> clazz = Class.forName("com.android.internal.display.BrightnessUtils");
+            java.lang.reflect.Method method = clazz.getDeclaredMethod(methodName, float.class);
+            method.setAccessible(true);
+            Object result = method.invoke(null, value);
+            if (result instanceof Float) {
+                return (Float) result;
+            }
+        } catch (Throwable ignored) {
+            // Reflection may be blocked on some devices; fall back to HLG.
+        }
+        return null;
+    }
+
+    private static float hlgGammaToLinear(float gamma) {
+        if (gamma <= 0) {
+            return 0.0f;
+        }
+
+        final float linear;
+        if (gamma <= HLG_R) {
+            linear = (gamma / HLG_R) * (gamma / HLG_R) / 12.0f;
+        } else {
+            linear = ((float) Math.exp((gamma - HLG_C) / HLG_A) + HLG_B) / 12.0f;
+        }
+
+        return clamp01(linear);
+    }
+
+    private static float hlgLinearToGamma(float linear) {
+        if (linear <= 0) {
+            return 0.0f;
+        }
+
+        final float gamma;
+        if (linear <= 1.0f / 12.0f) {
+            gamma = (float) Math.sqrt(linear * 12.0f) * HLG_R;
+        } else {
+            gamma = HLG_A * (float) Math.log(12.0f * linear - HLG_B) + HLG_C;
+        }
+
+        return clamp01(gamma);
+    }
+
+    /**
+     * Convert slider/user percentage (0-100) to system brightness float (0.0-1.0).
+     * Uses system BrightnessUtils when available; falls back to HLG.
+     */
+    private static float sliderPercentToLinearFloat(int percent) {
+        float gamma = clamp01(Math.max(0, Math.min(100, percent)) / 100.0f);
+
+        Float reflected = invokeBrightnessUtils("convertGammaToLinearFloat", gamma);
+        if (reflected != null) {
+            return clamp01(reflected);
+        }
+
+        return hlgGammaToLinear(gamma);
+    }
+
+    /**
+     * Convert system brightness float (0.0-1.0) to slider/user percentage (0-100).
+     * Uses system BrightnessUtils when available; falls back to HLG.
+     */
+    private static int linearFloatToSliderPercent(float linear) {
+        float clampedLinear = clamp01(linear);
+
+        Float reflected = invokeBrightnessUtils("convertLinearToGammaFloat", clampedLinear);
+        float gamma = reflected != null ? clamp01(reflected) : hlgLinearToGamma(clampedLinear);
+
+        return Math.round(gamma * 100.0f);
+    }
+
+    /**
+     * Convert slider/user percentage (0-100) to system brightness integer (0-255).
+     */
+    private static int sliderPercentToSystemInt(int percent) {
+        float clamped = Math.max(0, Math.min(100, percent));
+        return Math.round(clamped * 255.0f / 100.0f);
+    }
+
+    /**
+     * Convert system brightness integer (0-255) to slider/user percentage (0-100).
+     */
+    private static int systemIntToSliderPercent(int systemValue) {
+        int clamped = Math.max(0, Math.min(255, systemValue));
+        return Math.round(clamped * 100.0f / 255.0f);
+    }
+
+    /**
+     * Android 16+ uses a non-linear slider curve that doesn't match HLG on some devices.
+     * Apply an empirically derived inverse mapping so the app percentage matches the
+     * system slider percentage. Uses piecewise linear interpolation.
+     */
+    private static int adjustSliderPercentForAndroid16Plus(int desiredPercent) {
+        int clamped = Math.max(0, Math.min(100, desiredPercent));
+
+        // Device percent (x) -> App percent (y) inverse mapping points
+        // Derived from observed pairs: app->device
+        final int[] devicePoints = new int[] { 0, 20, 37, 50, 60, 70, 79, 89, 99, 100 };
+        final int[] appPoints = new int[]    { 0, 20, 30, 40, 50, 60, 70, 80, 90, 100 };
+
+        if (clamped <= devicePoints[0]) {
+            return appPoints[0];
+        }
+
+        for (int i = 1; i < devicePoints.length; i++) {
+            if (clamped <= devicePoints[i]) {
+                int x0 = devicePoints[i - 1];
+                int x1 = devicePoints[i];
+                int y0 = appPoints[i - 1];
+                int y1 = appPoints[i];
+
+                float t = (x1 == x0) ? 0.0f : (clamped - x0) / (float) (x1 - x0);
+                return Math.round(y0 + t * (y1 - y0));
+            }
+        }
+
+        return appPoints[appPoints.length - 1];
+    }
+
+    private static int maybeAdjustPercentForAndroid16Plus(int desiredPercent) {
+        if (Build.VERSION.SDK_INT >= 35) { // Android 15/16+
+            return adjustSliderPercentForAndroid16Plus(desiredPercent);
+        }
+        return desiredPercent;
+    }
+
+    // ============ Public API Methods ============
 
     @ReactMethod
     public void setBrightness(final int brightnessPercent, final Promise promise) {
@@ -54,21 +195,12 @@ public class BrightnessControlModule extends ReactContextBaseJavaModule {
                         return;
                     }
 
-                    // Clamp brightness between 0 and 100
                     int clampedBrightness = Math.max(0, Math.min(100, brightnessPercent));
+                    int adjustedBrightness = maybeAdjustPercentForAndroid16Plus(clampedBrightness);
 
-                    ensureBrightnessRangeInitialized();
-
-                    int systemBrightnessValue = convertPercentToSystemValue(clampedBrightness);
-
-                    // Also try to set system brightness (requires WRITE_SETTINGS permission)
+                    // Set system brightness (requires WRITE_SETTINGS permission)
                     try {
                         ContentResolver cResolver = reactContext.getContentResolver();
-                        Settings.System.putInt(
-                            cResolver,
-                            Settings.System.SCREEN_BRIGHTNESS,
-                            systemBrightnessValue
-                        );
 
                         // Disable auto brightness
                         Settings.System.putInt(
@@ -76,19 +208,52 @@ public class BrightnessControlModule extends ReactContextBaseJavaModule {
                             Settings.System.SCREEN_BRIGHTNESS_MODE,
                             Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL
                         );
+
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                            // Android 9+: convert slider (gamma) percent to linear float
+                            float linearFloat = sliderPercentToLinearFloat(adjustedBrightness);
+
+                            try {
+                                Settings.System.putFloat(cResolver, SCREEN_BRIGHTNESS_FLOAT, linearFloat);
+                            } catch (Exception e) {
+                                Log.w(TAG, "Could not write float brightness setting", e);
+                            }
+
+                            // Also write integer value derived from linear float (compatibility)
+                            int systemValue = Math.round(linearFloat * 255.0f);
+                            Settings.System.putInt(
+                                cResolver,
+                                Settings.System.SCREEN_BRIGHTNESS,
+                                systemValue
+                            );
+
+                            Log.d(TAG, "Brightness set to " + clampedBrightness + "% (adjusted=" + adjustedBrightness + "%, linearFloat=" + linearFloat + ", int=" + systemValue + "/255)");
+
+                            // Set window brightness
+                            Window window = activity.getWindow();
+                            WindowManager.LayoutParams layoutParams = window.getAttributes();
+                            layoutParams.screenBrightness = linearFloat;
+                            window.setAttributes(layoutParams);
+                        } else {
+                            // Android 6-8: linear mapping to integer range
+                            int systemValue = sliderPercentToSystemInt(adjustedBrightness);
+                            Settings.System.putInt(
+                                cResolver,
+                                Settings.System.SCREEN_BRIGHTNESS,
+                                systemValue
+                            );
+
+                            Log.d(TAG, "Brightness set to " + clampedBrightness + "% (adjusted=" + adjustedBrightness + "%, int=" + systemValue + "/255)");
+
+                            Window window = activity.getWindow();
+                            WindowManager.LayoutParams layoutParams = window.getAttributes();
+                            layoutParams.screenBrightness = systemValue / 255.0f;
+                            window.setAttributes(layoutParams);
+                        }
                     } catch (Exception e) {
                         Log.w(TAG, "Could not set system brightness (permission may be missing)", e);
                     }
 
-                    // Ensure the current window follows the value we just applied system-wide.
-                    Window window = activity.getWindow();
-                    WindowManager.LayoutParams layoutParams = window.getAttributes();
-                    // Set window brightness explicitly to ensure immediate feedback
-                    // Use the calculated system value to ensure consistency with the curve
-                    layoutParams.screenBrightness = (float)systemBrightnessValue / brightnessMaximum;
-                    window.setAttributes(layoutParams);
-
-                    Log.d(TAG, "Brightness set to " + brightnessPercent + "% (system=" + systemBrightnessValue + "/" + brightnessMaximum + ")");
                     promise.resolve(true);
                 } catch (Exception e) {
                     Log.e(TAG, "Error setting brightness", e);
@@ -110,42 +275,50 @@ public class BrightnessControlModule extends ReactContextBaseJavaModule {
                         return;
                     }
 
-                    float brightness;
+                    int brightnessPercent;
                     String brightnessSource;
 
-                    ensureBrightnessRangeInitialized();
                     // Check window brightness first as it reflects what the user sees in the app
                     Window window = activity.getWindow();
                     WindowManager.LayoutParams layoutParams = window.getAttributes();
                     float windowBrightness = layoutParams.screenBrightness;
 
                     if (windowBrightness >= 0) {
-                        // Convert window brightness (linear) back to percent (gamma)
-                        int estimatedSystemValue = Math.round(windowBrightness * brightnessMaximum);
-                        brightness = convertSystemValueToPercent(estimatedSystemValue);
+                        // Window brightness is linear (0.0-1.0), convert to percentage
+                        brightnessPercent = linearFloatToSliderPercent(windowBrightness);
                         brightnessSource = "window";
                     } else {
                         // Fallback to system brightness
                         try {
                             ContentResolver cResolver = reactContext.getContentResolver();
-                            int systemBrightness = Settings.System.getInt(
-                                cResolver,
-                                Settings.System.SCREEN_BRIGHTNESS
-                            );
-                            // Convert from system range to 0-100 percentage
-                            brightness = convertSystemValueToPercent(systemBrightness);
-                            brightnessSource = "system";
-                            Log.d(TAG, "Read system brightness: " + systemBrightness + "/" + brightnessMaximum + " (" + brightness + "%)");
+
+                            // Try float setting first on Android 9+, then fall back to integer
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                                try {
+                                    float brightnessFloat = Settings.System.getFloat(cResolver, SCREEN_BRIGHTNESS_FLOAT);
+                                    brightnessPercent = linearFloatToSliderPercent(brightnessFloat);
+                                    brightnessSource = "system_float";
+                                } catch (Settings.SettingNotFoundException e) {
+                                    int systemBrightness = Settings.System.getInt(cResolver, Settings.System.SCREEN_BRIGHTNESS);
+                                    brightnessPercent = systemIntToSliderPercent(systemBrightness);
+                                    brightnessSource = "system_int_fallback";
+                                }
+                            } else {
+                                int systemBrightness = Settings.System.getInt(cResolver, Settings.System.SCREEN_BRIGHTNESS);
+                                brightnessPercent = systemIntToSliderPercent(systemBrightness);
+                                brightnessSource = "system_int";
+                            }
+
+                            Log.d(TAG, "Read system brightness (" + brightnessSource + ")");
                         } catch (Exception e) {
                             Log.w(TAG, "Could not read system brightness", e);
-                            brightness = 50;
+                            brightnessPercent = 50;
                             brightnessSource = "default";
                         }
                     }
 
-                    int brightnessPercent = Math.round(Math.max(0, Math.min(100, brightness)));
-
-                    Log.d(TAG, "getBrightness() returning " + brightnessPercent + "% from " + brightnessSource + " brightness");
+                    brightnessPercent = Math.max(0, Math.min(100, brightnessPercent));
+                    Log.d(TAG, "getBrightness() returning " + brightnessPercent + "% from " + brightnessSource);
                     promise.resolve(brightnessPercent);
                 } catch (Exception e) {
                     Log.e(TAG, "Error getting brightness", e);
@@ -263,93 +436,7 @@ public class BrightnessControlModule extends ReactContextBaseJavaModule {
         promise.resolve(isEnforcing);
     }
 
-    private void ensureBrightnessRangeInitialized() {
-        if (brightnessRangeInitialized) {
-            return;
-        }
-
-        int min = 0;
-        int max = 255;
-
-        ContentResolver resolver = reactContext.getContentResolver();
-
-        try {
-            min = Settings.System.getInt(resolver, "screen_brightness_min");
-        } catch (Settings.SettingNotFoundException | SecurityException ignored) {
-        }
-
-        try {
-            max = Settings.System.getInt(resolver, "screen_brightness_max");
-        } catch (Settings.SettingNotFoundException | SecurityException ignored) {
-        }
-
-        Resources res = reactContext.getResources();
-
-        int resMinId = res.getIdentifier("config_screenBrightnessSettingMinimum", "integer", "android");
-        if (resMinId != 0) {
-            try {
-                min = res.getInteger(resMinId);
-            } catch (Resources.NotFoundException ignored) {
-            }
-        }
-
-        int resMaxId = res.getIdentifier("config_screenBrightnessSettingMaximum", "integer", "android");
-        if (resMaxId != 0) {
-            try {
-                max = res.getInteger(resMaxId);
-            } catch (Resources.NotFoundException ignored) {
-            }
-        }
-
-        if (max <= min) {
-            // Fallback to defaults if values are invalid
-            min = 0;
-            max = 255;
-        }
-
-        brightnessMinimum = Math.max(0, min);
-        brightnessMaximum = Math.max(brightnessMinimum + 1, max);
-        brightnessRangeInitialized = true;
-
-        Log.d(TAG, "Resolved brightness range -> min=" + brightnessMinimum + ", max=" + brightnessMaximum);
-    }
-
-    private int convertPercentToSystemValue(int percent) {
-        ensureBrightnessRangeInitialized();
-
-        int clampedPercent = Math.max(0, Math.min(100, percent));
-        int range = brightnessMaximum - brightnessMinimum;
-
-        if (range <= 0) {
-            return Math.round(clampedPercent * 255.0f / 100.0f);
-        }
-
-        // Use quadratic curve for better perception matching (Gamma 2.0)
-        // This matches Android's slider behavior where 50% is perceptually half bright (but ~25% power)
-        float normalizedPercent = clampedPercent / 100.0f;
-        float normalizedValue = normalizedPercent * normalizedPercent; // x^2
-        
-        int systemValue = Math.round(brightnessMinimum + normalizedValue * range);
-        return Math.max(brightnessMinimum, Math.min(brightnessMaximum, systemValue));
-    }
-
-    private int convertSystemValueToPercent(int systemValue) {
-        ensureBrightnessRangeInitialized();
-
-        int clampedValue = Math.max(brightnessMinimum, Math.min(brightnessMaximum, systemValue));
-        int range = brightnessMaximum - brightnessMinimum;
-
-        if (range <= 0) {
-            float normalized = clampedValue / 255.0f;
-            return Math.round(normalized * 100.0f);
-        }
-
-        // Inverse of quadratic curve: percent = sqrt(normalizedValue)
-        float normalizedValue = (float)(clampedValue - brightnessMinimum) / range;
-        float normalizedPercent = (float)Math.sqrt(normalizedValue);
-        
-        return Math.round(Math.max(0.0f, Math.min(1.0f, normalizedPercent)) * 100.0f);
-    }
+    // ============ Monitoring & Enforcement ============
 
     private void startBrightnessMonitoring() {
         if (brightnessObserver != null) {
@@ -366,11 +453,22 @@ public class BrightnessControlModule extends ReactContextBaseJavaModule {
             }
         };
 
-        reactContext.getContentResolver().registerContentObserver(
+        ContentResolver resolver = reactContext.getContentResolver();
+
+        resolver.registerContentObserver(
             Settings.System.getUriFor(Settings.System.SCREEN_BRIGHTNESS),
             false,
             brightnessObserver
         );
+
+        // On API 28+, also observe the float brightness setting for better detection
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            resolver.registerContentObserver(
+                Settings.System.getUriFor(SCREEN_BRIGHTNESS_FLOAT),
+                false,
+                brightnessObserver
+            );
+        }
 
         Log.d(TAG, "Brightness monitoring started");
     }
@@ -392,38 +490,68 @@ public class BrightnessControlModule extends ReactContextBaseJavaModule {
             @Override
             public void run() {
                 try {
-                    // Get current system brightness
                     ContentResolver cResolver = reactContext.getContentResolver();
-                    int currentSystemBrightness = Settings.System.getInt(
-                        cResolver,
-                        Settings.System.SCREEN_BRIGHTNESS
-                    );
-                    ensureBrightnessRangeInitialized();
+                    int currentPercent;
 
-                    int currentPercent = convertSystemValueToPercent(currentSystemBrightness);
+                    // Read current brightness and convert to slider percentage
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        try {
+                            float currentFloat = Settings.System.getFloat(cResolver, SCREEN_BRIGHTNESS_FLOAT);
+                            currentPercent = linearFloatToSliderPercent(currentFloat);
+                        } catch (Settings.SettingNotFoundException e) {
+                            int currentInt = Settings.System.getInt(cResolver, Settings.System.SCREEN_BRIGHTNESS);
+                            currentPercent = systemIntToSliderPercent(currentInt);
+                        }
+                    } else {
+                        int currentInt = Settings.System.getInt(cResolver, Settings.System.SCREEN_BRIGHTNESS);
+                        currentPercent = systemIntToSliderPercent(currentInt);
+                    }
 
-                    // Check if brightness has changed significantly
-                    if (Math.abs(currentPercent - enforcedBrightness) > 5) {
-                        // Restore enforced brightness - convert percentage (0-100) to Android value (0-255)
-                        int targetBrightness = convertPercentToSystemValue(enforcedBrightness);
-                        
-                        // Set system brightness
-                        Settings.System.putInt(
-                            cResolver,
-                            Settings.System.SCREEN_BRIGHTNESS,
-                            targetBrightness
-                        );
+                    // Check if brightness has changed significantly (more than 3% tolerance)
+                    if (Math.abs(currentPercent - enforcedBrightness) > 3) {
+                        // Disable auto brightness if needed
+                        Settings.System.putInt(cResolver,
+                            Settings.System.SCREEN_BRIGHTNESS_MODE,
+                            Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL);
 
-                        // Set window brightness explicitly to ensure enforcement in app (if app is in foreground)
-                        Activity activity = getCurrentActivity();
-                        if (activity != null) {
-                            Window window = activity.getWindow();
-                            WindowManager.LayoutParams layoutParams = window.getAttributes();
-                            layoutParams.screenBrightness = (float)targetBrightness / brightnessMaximum;
-                            window.setAttributes(layoutParams);
-                            Log.d(TAG, "Brightness enforced (system + window): " + currentPercent + "% -> " + enforcedBrightness + "%");
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                            int adjustedBrightness = maybeAdjustPercentForAndroid16Plus(enforcedBrightness);
+                            float enforcedLinear = sliderPercentToLinearFloat(adjustedBrightness);
+
+                            try {
+                                Settings.System.putFloat(cResolver, SCREEN_BRIGHTNESS_FLOAT, enforcedLinear);
+                            } catch (Exception e) {
+                                Log.w(TAG, "Could not write float brightness during enforcement", e);
+                            }
+
+                            int enforcedInt = Math.round(enforcedLinear * 255.0f);
+                            Settings.System.putInt(cResolver, Settings.System.SCREEN_BRIGHTNESS, enforcedInt);
+
+                            Activity activity = getCurrentActivity();
+                            if (activity != null) {
+                                Window window = activity.getWindow();
+                                WindowManager.LayoutParams lp = window.getAttributes();
+                                lp.screenBrightness = enforcedLinear;
+                                window.setAttributes(lp);
+                                Log.d(TAG, "Brightness enforced (system + window): " + currentPercent + "% -> " + enforcedBrightness + "%");
+                            } else {
+                                Log.d(TAG, "Brightness enforced (system only): " + currentPercent + "% -> " + enforcedBrightness + "%");
+                            }
                         } else {
-                            Log.d(TAG, "Brightness enforced (system only, app in background): " + currentPercent + "% -> " + enforcedBrightness + "%");
+                            int adjustedBrightness = maybeAdjustPercentForAndroid16Plus(enforcedBrightness);
+                            int enforcedInt = sliderPercentToSystemInt(adjustedBrightness);
+                            Settings.System.putInt(cResolver, Settings.System.SCREEN_BRIGHTNESS, enforcedInt);
+
+                            Activity activity = getCurrentActivity();
+                            if (activity != null) {
+                                Window window = activity.getWindow();
+                                WindowManager.LayoutParams lp = window.getAttributes();
+                                lp.screenBrightness = enforcedInt / 255.0f;
+                                window.setAttributes(lp);
+                                Log.d(TAG, "Brightness enforced (system + window): " + currentPercent + "% -> " + enforcedBrightness + "%");
+                            } else {
+                                Log.d(TAG, "Brightness enforced (system only): " + currentPercent + "% -> " + enforcedBrightness + "%");
+                            }
                         }
 
                         // Send event to JavaScript

@@ -39,12 +39,16 @@
       </activity>
 
       <!-- Foreground Service for keeping enforcement active in background -->
-      <!-- Note: foregroundServiceType is set at runtime in EnforcementService.java
-           to support both Android 11+ (no type) and Android 14+ (specialUse type) -->
+      <!-- foregroundServiceType="specialUse" is required by Android 14+ at runtime;
+           on older Android versions the unknown flag value is safely ignored -->
       <service
         android:name=".EnforcementService"
         android:enabled="true"
-        android:exported="false">
+        android:exported="false"
+        android:foregroundServiceType="specialUse">
+        <property
+          android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+          android:value="parental_control" />
       </service>
     </application>
 </manifest>
