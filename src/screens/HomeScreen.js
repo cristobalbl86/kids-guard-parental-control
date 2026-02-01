@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Text, Card, IconButton } from 'react-native-paper';
 import { theme, statusColors } from '../utils/theme';
 import { getAllSettings } from '../utils/storage';
@@ -12,6 +13,7 @@ export default function HomeScreen({ navigation }) {
     volume: { volume: 50, locked: false },
     brightness: { brightness: 50, locked: false },
   });
+  const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
@@ -143,7 +145,7 @@ export default function HomeScreen({ navigation }) {
         </Card>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: 20 + insets.bottom }]}>
         <Button
           mode="contained"
           onPress={handleOpenSettings}
