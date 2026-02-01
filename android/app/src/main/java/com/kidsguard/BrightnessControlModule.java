@@ -151,9 +151,9 @@ public class BrightnessControlModule extends ReactContextBaseJavaModule {
         int clamped = Math.max(0, Math.min(100, desiredPercent));
 
         // Device percent (x) -> App percent (y) inverse mapping points
-        // Derived from observed pairs: app->device
-        final int[] devicePoints = new int[] { 0, 20, 37, 50, 60, 70, 79, 89, 99, 100 };
-        final int[] appPoints = new int[]    { 0, 20, 30, 40, 50, 60, 70, 80, 90, 100 };
+        // Refined from observed pairs: app->device
+        final int[] devicePoints = new int[] { 0, 14, 20, 34, 50, 60, 70, 79, 89, 99, 100 };
+        final int[] appPoints = new int[]    { 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100 };
 
         if (clamped <= devicePoints[0]) {
             return appPoints[0];
