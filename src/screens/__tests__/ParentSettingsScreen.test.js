@@ -4,12 +4,10 @@ import { Alert } from 'react-native';
 import ParentSettingsScreen from '../ParentSettingsScreen';
 import * as storage from '../../utils/storage';
 import * as volumeControl from '../../utils/volumeControl';
-import * as brightnessControl from '../../utils/brightnessControl';
 
 // Mock the utilities
 jest.mock('../../utils/storage');
 jest.mock('../../utils/volumeControl');
-jest.mock('../../utils/brightnessControl');
 jest.mock('../../utils/admobControl', () => ({
   showInterstitialIfEligible: jest.fn().mockResolvedValue(false),
 }));
@@ -30,14 +28,9 @@ describe('ParentSettingsScreen', () => {
     // Default mock implementations
     storage.getAllSettings.mockResolvedValue({
       volume: { volume: 50, locked: false, isDefault: false },
-      brightness: { brightness: 50, locked: false, isDefault: false },
     });
     volumeControl.updateVolumeSettings.mockResolvedValue(true);
     volumeControl.getVolume.mockResolvedValue(50);
-    brightnessControl.updateBrightnessSettings.mockResolvedValue(true);
-    brightnessControl.getBrightness.mockResolvedValue(50);
-    brightnessControl.checkWriteSettingsPermission.mockResolvedValue(true);
-    brightnessControl.requestWriteSettingsPermission.mockResolvedValue(true);
     Alert.alert = jest.fn();
   });
 
@@ -59,12 +52,11 @@ describe('ParentSettingsScreen', () => {
       expect(getByText('common.loading')).toBeTruthy();
     });
 
-    it('should display volume and brightness controls after loading', async () => {
+    it('should display volume controls after loading', async () => {
       const { getByText } = render(<ParentSettingsScreen navigation={mockNavigation} />);
 
       await waitFor(() => {
         expect(getByText('common.volume')).toBeTruthy();
-        expect(getByText('common.brightness')).toBeTruthy();
       });
     });
 
@@ -97,21 +89,6 @@ describe('ParentSettingsScreen', () => {
     it('should display loaded volume value', async () => {
       storage.getAllSettings.mockResolvedValue({
         volume: { volume: 75, locked: false, isDefault: false },
-        brightness: { brightness: 50, locked: false, isDefault: false },
-      });
-
-      render(<ParentSettingsScreen navigation={mockNavigation} />);
-
-      await waitFor(() => {
-        // Verify settings were loaded successfully
-        expect(storage.getAllSettings).toHaveBeenCalled();
-      });
-    });
-
-    it('should display loaded brightness value', async () => {
-      storage.getAllSettings.mockResolvedValue({
-        volume: { volume: 50, locked: false, isDefault: false },
-        brightness: { brightness: 80, locked: false, isDefault: false },
       });
 
       render(<ParentSettingsScreen navigation={mockNavigation} />);
@@ -125,7 +102,6 @@ describe('ParentSettingsScreen', () => {
     it('should load current volume if not locked', async () => {
       storage.getAllSettings.mockResolvedValue({
         volume: { volume: 50, locked: false, isDefault: false },
-        brightness: { brightness: 50, locked: false, isDefault: false },
       });
       volumeControl.getVolume.mockResolvedValue(65);
 
@@ -133,20 +109,6 @@ describe('ParentSettingsScreen', () => {
 
       await waitFor(() => {
         expect(volumeControl.getVolume).toHaveBeenCalled();
-      });
-    });
-
-    it('should load current brightness if not locked', async () => {
-      storage.getAllSettings.mockResolvedValue({
-        volume: { volume: 50, locked: false, isDefault: false },
-        brightness: { brightness: 50, locked: false, isDefault: false },
-      });
-      brightnessControl.getBrightness.mockResolvedValue(70);
-
-      render(<ParentSettingsScreen navigation={mockNavigation} />);
-
-      await waitFor(() => {
-        expect(brightnessControl.getBrightness).toHaveBeenCalled();
       });
     });
 
@@ -258,81 +220,6 @@ describe('ParentSettingsScreen', () => {
     });
   });
 
-  describe('Brightness Control', () => {
-    it('should update brightness when text input changes', async () => {
-      const { getAllByDisplayValue } = render(<ParentSettingsScreen navigation={mockNavigation} />);
-
-      await waitFor(() => {
-        const inputs = getAllByDisplayValue('50');
-        const brightnessInput = inputs[1]; // Second input is brightness
-        fireEvent.changeText(brightnessInput, '80');
-      });
-
-      await waitFor(() => {
-        expect(getAllByDisplayValue('80')).toBeTruthy();
-      });
-    });
-
-    it('should clamp brightness to maximum 100', async () => {
-      const { getAllByDisplayValue } = render(<ParentSettingsScreen navigation={mockNavigation} />);
-
-      await waitFor(() => {
-        const inputs = getAllByDisplayValue('50');
-        fireEvent.changeText(inputs[1], '120');
-      });
-
-      await waitFor(() => {
-        expect(getAllByDisplayValue('100')).toBeTruthy();
-      });
-    });
-
-    it('should toggle brightness lock switch', async () => {
-      const { getAllByRole } = render(<ParentSettingsScreen navigation={mockNavigation} />);
-
-      await waitFor(async () => {
-        const switches = getAllByRole('switch');
-        const brightnessSwitch = switches[1]; // Second switch is brightness
-
-        fireEvent(brightnessSwitch, 'onValueChange', true);
-
-        await waitFor(() => {
-          expect(brightnessControl.updateBrightnessSettings).toHaveBeenCalledWith(50, true);
-        });
-      });
-    });
-
-    it('should check permission when locking brightness', async () => {
-      const { getAllByRole } = render(<ParentSettingsScreen navigation={mockNavigation} />);
-
-      await waitFor(async () => {
-        const switches = getAllByRole('switch');
-        fireEvent(switches[1], 'onValueChange', true);
-
-        await waitFor(() => {
-          expect(brightnessControl.updateBrightnessSettings).toHaveBeenCalled();
-        });
-      });
-    });
-
-    it('should show permission alert if permission not granted', async () => {
-      brightnessControl.checkWriteSettingsPermission.mockResolvedValue(false);
-      storage.getAllSettings.mockResolvedValue({
-        volume: { volume: 50, locked: false, isDefault: false },
-        brightness: { brightness: 50, locked: true, isDefault: false },
-      });
-
-      render(<ParentSettingsScreen navigation={mockNavigation} />);
-
-      await waitFor(() => {
-        expect(Alert.alert).toHaveBeenCalledWith(
-          'parentSettings.permissionTitle',
-          'parentSettings.permissionMessage',
-          expect.any(Array)
-        );
-      });
-    });
-  });
-
   describe('PIN Change', () => {
     it('should show PIN change dialog when button is pressed', async () => {
       const { getByText } = render(<ParentSettingsScreen navigation={mockNavigation} />);
@@ -374,7 +261,6 @@ describe('ParentSettingsScreen', () => {
     it('should not decrement below 0', async () => {
       storage.getAllSettings.mockResolvedValue({
         volume: { volume: 0, locked: false, isDefault: false },
-        brightness: { brightness: 50, locked: false, isDefault: false },
       });
 
       const { getByText } = render(<ParentSettingsScreen navigation={mockNavigation} />);
@@ -389,7 +275,6 @@ describe('ParentSettingsScreen', () => {
     it('should not increment above 100', async () => {
       storage.getAllSettings.mockResolvedValue({
         volume: { volume: 100, locked: false, isDefault: false },
-        brightness: { brightness: 50, locked: false, isDefault: false },
       });
 
       const { getByText } = render(<ParentSettingsScreen navigation={mockNavigation} />);
@@ -406,7 +291,6 @@ describe('ParentSettingsScreen', () => {
     it('should show locked status when volume is locked', async () => {
       storage.getAllSettings.mockResolvedValue({
         volume: { volume: 60, locked: true, isDefault: false },
-        brightness: { brightness: 50, locked: false, isDefault: false },
       });
 
       const { getByText } = render(<ParentSettingsScreen navigation={mockNavigation} />);
@@ -419,7 +303,6 @@ describe('ParentSettingsScreen', () => {
     it('should show unlocked status when volume is not locked', async () => {
       storage.getAllSettings.mockResolvedValue({
         volume: { volume: 60, locked: false, isDefault: false },
-        brightness: { brightness: 50, locked: false, isDefault: false },
       });
 
       const { getAllByText } = render(<ParentSettingsScreen navigation={mockNavigation} />);
@@ -434,7 +317,6 @@ describe('ParentSettingsScreen', () => {
     it('should show placeholder notice for default volume settings', async () => {
       storage.getAllSettings.mockResolvedValue({
         volume: { volume: 50, locked: false, isDefault: true },
-        brightness: { brightness: 50, locked: false, isDefault: false },
       });
 
       const { getByText } = render(<ParentSettingsScreen navigation={mockNavigation} />);
@@ -443,24 +325,10 @@ describe('ParentSettingsScreen', () => {
         expect(getByText('parentSettings.placeholderNotice')).toBeTruthy();
       });
     });
-
-    it('should show placeholder notice for default brightness settings', async () => {
-      storage.getAllSettings.mockResolvedValue({
-        volume: { volume: 50, locked: false, isDefault: false },
-        brightness: { brightness: 50, locked: false, isDefault: true },
-      });
-
-      const { getAllByText } = render(<ParentSettingsScreen navigation={mockNavigation} />);
-
-      await waitFor(() => {
-        const notices = getAllByText('parentSettings.placeholderNotice');
-        expect(notices.length).toBeGreaterThan(0);
-      });
-    });
   });
 
   describe('Focus Listener', () => {
-    it('should reapply brightness when screen comes into focus', async () => {
+    it('should reload settings when screen comes into focus', async () => {
       const mockAddListener = jest.fn((event, callback) => {
         if (event === 'focus') {
           // Call the callback immediately for testing
@@ -476,7 +344,6 @@ describe('ParentSettingsScreen', () => {
 
       storage.getAllSettings.mockResolvedValue({
         volume: { volume: 50, locked: false, isDefault: false },
-        brightness: { brightness: 70, locked: true, isDefault: false },
       });
 
       render(<ParentSettingsScreen navigation={navigation} />);

@@ -25,7 +25,6 @@ import PINEntryScreen from './src/screens/PINEntryScreen';
 import {checkFirstLaunch, initializeApp} from './src/utils/storage';
 import {theme} from './src/utils/theme';
 import {initializeVolumeControl} from './src/utils/volumeControl';
-import {initializeBrightnessControl} from './src/utils/brightnessControl';
 import {initializeAdMob, showInterstitialIfEligible} from './src/utils/admobControl';
 import {requestPostNotificationsPermission} from './src/utils/permissions';
 
@@ -85,7 +84,6 @@ export default function App() {
           await requestPostNotificationsPermission();
 
           await initializeVolumeControl();
-          await initializeBrightnessControl();
           await initializeAdMob();
           // Show ad after initialization if eligible
           setTimeout(async () => {

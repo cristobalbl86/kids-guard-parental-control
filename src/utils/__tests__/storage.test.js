@@ -6,8 +6,6 @@ import {
   changePIN,
   saveVolumeSettings,
   getVolumeSettings,
-  saveBrightnessSettings,
-  getBrightnessSettings,
   getAllSettings,
   initializeApp,
   checkFirstLaunch,
@@ -281,73 +279,13 @@ describe('Storage Utility', () => {
     });
   });
 
-  describe('Brightness Settings', () => {
-    describe('saveBrightnessSettings', () => {
-      it('should save brightness settings to AsyncStorage', async () => {
-        await saveBrightnessSettings({ brightness: 80, locked: true });
 
-        expect(AsyncStorage.setItem).toHaveBeenCalledWith(
-          'brightness_settings',
-          JSON.stringify({ brightness: 80, locked: true })
-        );
-      });
-
-      it('should clamp brightness to 0-100 range', async () => {
-        await saveBrightnessSettings({ brightness: 120, locked: false });
-
-        expect(AsyncStorage.setItem).toHaveBeenCalledWith(
-          'brightness_settings',
-          JSON.stringify({ brightness: 100, locked: false })
-        );
-      });
-
-      it('should use default brightness if not provided', async () => {
-        await saveBrightnessSettings({ locked: false });
-
-        expect(AsyncStorage.setItem).toHaveBeenCalledWith(
-          'brightness_settings',
-          JSON.stringify({ brightness: 50, locked: false })
-        );
-      });
-    });
-
-    describe('getBrightnessSettings', () => {
-      it('should retrieve brightness settings from AsyncStorage', async () => {
-        AsyncStorage.getItem.mockResolvedValue(
-          JSON.stringify({ brightness: 80, locked: true })
-        );
-
-        const settings = await getBrightnessSettings();
-
-        expect(settings).toEqual({ brightness: 80, locked: true, isDefault: false });
-      });
-
-      it('should return default settings if none exist', async () => {
-        AsyncStorage.getItem.mockResolvedValue(null);
-
-        const settings = await getBrightnessSettings();
-
-        expect(settings).toEqual({ brightness: 50, locked: false, isDefault: true });
-      });
-
-      it('should handle AsyncStorage errors gracefully', async () => {
-        AsyncStorage.getItem.mockRejectedValue(new Error('Storage error'));
-
-        const settings = await getBrightnessSettings();
-
-        expect(settings).toEqual({ brightness: 50, locked: false, isDefault: true });
-      });
-    });
-  });
 
   describe('getAllSettings', () => {
-    it('should return both volume and brightness settings', async () => {
+    it('should return volume settings', async () => {
       AsyncStorage.getItem.mockImplementation((key) => {
         if (key === 'volume_settings') {
           return Promise.resolve(JSON.stringify({ volume: 60, locked: true }));
-        }
-        if (key === 'brightness_settings') {
-          return Promise.resolve(JSON.stringify({ brightness: 70, locked: false }));
         }
         return Promise.resolve(null);
       });
@@ -356,18 +294,16 @@ describe('Storage Utility', () => {
 
       expect(allSettings).toEqual({
         volume: { volume: 60, locked: true, isDefault: false },
-        brightness: { brightness: 70, locked: false, isDefault: false },
       });
     });
 
-    it('should return defaults for both if no settings exist', async () => {
+    it('should return default volume settings if none exist', async () => {
       AsyncStorage.getItem.mockResolvedValue(null);
 
       const allSettings = await getAllSettings();
 
       expect(allSettings).toEqual({
         volume: { volume: 50, locked: false, isDefault: true },
-        brightness: { brightness: 50, locked: false, isDefault: true },
       });
     });
   });
@@ -383,10 +319,6 @@ describe('Storage Utility', () => {
         expect(AsyncStorage.setItem).toHaveBeenCalledWith(
           'volume_settings',
           JSON.stringify({ volume: 50, locked: false })
-        );
-        expect(AsyncStorage.setItem).toHaveBeenCalledWith(
-          'brightness_settings',
-          JSON.stringify({ brightness: 50, locked: false })
         );
       });
 

@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert, Platform, TextInput, ActivityIndicator } from 'react-native';
-import { Button, Text, Card, Switch, IconButton, Divider } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { Button, Text, Card, Switch, IconButton } from 'react-native-paper';
 import { theme, statusColors } from '../utils/theme';
 import { getAllSettings, changePIN } from '../utils/storage';
 import { updateVolumeSettings, getVolume } from '../utils/volumeControl';
-import { updateBrightnessSettings, getBrightness, checkWriteSettingsPermission, requestWriteSettingsPermission } from '../utils/brightnessControl';
 import PINChangeDialog from '../components/PINChangeDialog';
 import { t } from '../utils/i18n';
 import { showInterstitialIfEligible } from '../utils/admobControl';
@@ -12,71 +11,30 @@ import { showInterstitialIfEligible } from '../utils/admobControl';
 export default function ParentSettingsScreen({ navigation }) {
   const [volumeValue, setVolumeValue] = useState(50);
   const [volumeLocked, setVolumeLocked] = useState(false);
-  const [brightnessValue, setBrightnessValue] = useState(50);
-  const [brightnessLocked, setBrightnessLocked] = useState(false);
+  const STEP_VALUE = 25;
+
+  const snapToStep = (value) => {
+    const clamped = Math.max(0, Math.min(100, Math.round(value)));
+    return Math.round(clamped / STEP_VALUE) * STEP_VALUE;
+  };
   const [showPINDialog, setShowPINDialog] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
   const [volumeConfigured, setVolumeConfigured] = useState(false);
-  const [brightnessConfigured, setBrightnessConfigured] = useState(false);
 
   useEffect(() => {
     loadSettings();
   }, []);
 
   useEffect(() => {
-    // Check permission and show ad when screen comes into focus
+    // Show ad when screen comes into focus
     const unsubscribe = navigation.addListener('focus', async () => {
-      checkAndReapplyBrightness();
       // Show ad if eligible (6-hour check happens inside)
       await showInterstitialIfEligible();
     });
 
     return unsubscribe;
-  }, [brightnessValue, brightnessLocked]);
-
-  const checkAndReapplyBrightness = async () => {
-    if (Platform.OS === 'android' && brightnessLocked) {
-      const hasPermission = await checkWriteSettingsPermission();
-      if (hasPermission) {
-        // Permission is granted, re-apply brightness to ensure system brightness is set
-        const { setBrightness } = require('../utils/brightnessControl');
-        await setBrightness(brightnessValue);
-        console.log('Reapplied brightness after permission check');
-      }
-    }
-  };
-
-  const checkBrightnessPermission = async () => {
-    if (Platform.OS === 'android') {
-      const hasPermission = await checkWriteSettingsPermission();
-      if (!hasPermission) {
-        Alert.alert(
-          t('parentSettings.permissionTitle'),
-          t('parentSettings.permissionMessage'),
-          [
-            { text: t('common.cancel'), style: 'cancel' },
-            {
-              text: t('parentSettings.permissionButton'),
-              onPress: async () => {
-                await requestWriteSettingsPermission();
-                // After opening settings, wait and check if permission was granted
-                setTimeout(async () => {
-                  const permissionGranted = await checkWriteSettingsPermission();
-                  if (permissionGranted && brightnessLocked) {
-                    // Re-apply brightness if it was locked
-                    const { setBrightness } = require('../utils/brightnessControl');
-                    await setBrightness(brightnessValue);
-                    Alert.alert(t('alerts.success'), t('parentSettings.permissionSuccess'));
-                  }
-                }, 2000);
-              },
-            },
-          ]
-        );
-      }
-    }
-  };
+  }, []);
 
   const loadSettings = async () => {
     setIsLoadingSettings(true);
@@ -91,49 +49,16 @@ export default function ParentSettingsScreen({ navigation }) {
         if (!settings.volume.locked) {
           const currentVolume = await getVolume();
           console.log('[loadSettings] Volume unlocked, got current:', currentVolume);
-          setVolumeValue(currentVolume);
+          setVolumeValue(snapToStep(currentVolume));
         } else {
           console.log('[loadSettings] Volume locked, using stored:', settings.volume.volume);
-          setVolumeValue(settings.volume.volume);
+          setVolumeValue(snapToStep(settings.volume.volume));
         }
         setVolumeLocked(settings.volume.locked);
       } else {
         console.log('[loadSettings] No stored volume settings - showing placeholders');
         setVolumeValue(50);
         setVolumeLocked(false);
-      }
-
-      const hasPersistedBrightness = !settings.brightness?.isDefault;
-      setBrightnessConfigured(hasPersistedBrightness);
-
-      if (hasPersistedBrightness) {
-        if (!settings.brightness.locked) {
-          console.log('[loadSettings] Brightness unlocked, calling getBrightness()...');
-          const currentBrightness = await getBrightness();
-          console.log('[loadSettings] Got current brightness:', currentBrightness);
-          setBrightnessValue(currentBrightness);
-        } else {
-          console.log('[loadSettings] Brightness locked, using stored:', settings.brightness.brightness);
-          setBrightnessValue(settings.brightness.brightness);
-        }
-        setBrightnessLocked(settings.brightness.locked);
-      } else {
-        console.log('[loadSettings] No stored brightness settings - showing placeholders');
-        setBrightnessValue(50);
-        setBrightnessLocked(false);
-      }
-
-      // After loading settings, check and request permission if brightness is locked
-      if (hasPersistedBrightness && settings.brightness.locked) {
-        checkBrightnessPermission();
-
-        // If permission already exists, reapply brightness to fix any mismatch
-        const hasPermission = await checkWriteSettingsPermission();
-        if (hasPermission) {
-          const { setBrightness } = require('../utils/brightnessControl');
-          await setBrightness(settings.brightness.brightness);
-          console.log('Reapplied brightness on load');
-        }
       }
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -144,7 +69,7 @@ export default function ParentSettingsScreen({ navigation }) {
   };
 
   const handleVolumeChange = (value) => {
-    setVolumeValue(Math.round(value));
+    setVolumeValue(snapToStep(value));
   };
 
   const handleVolumeLockToggle = async () => {
@@ -153,14 +78,16 @@ export default function ParentSettingsScreen({ navigation }) {
 
     // Save immediately
     setSaving(true);
-    
+
     // If unlocking, load current system volume
     if (!newLocked) {
       const currentVolume = await getVolume();
-      setVolumeValue(currentVolume);
+      setVolumeValue(snapToStep(currentVolume));
     }
-    
-    const success = await updateVolumeSettings(volumeValue, newLocked);
+
+    const snappedVolume = snapToStep(volumeValue);
+    setVolumeValue(snappedVolume);
+    const success = await updateVolumeSettings(snappedVolume, newLocked);
     setSaving(false);
 
     if (success) {
@@ -182,12 +109,14 @@ export default function ParentSettingsScreen({ navigation }) {
 
     // Import setVolume dynamically
     const { setVolume } = require('../utils/volumeControl');
+    const snappedVolume = snapToStep(volumeValue);
+    setVolumeValue(snappedVolume);
 
     // First, actually set the device volume
-    await setVolume(volumeValue);
+    await setVolume(snappedVolume);
 
     // Then save settings and update monitoring
-    const success = await updateVolumeSettings(volumeValue, volumeLocked);
+    const success = await updateVolumeSettings(snappedVolume, volumeLocked);
     setSaving(false);
 
     if (success) {
@@ -195,109 +124,6 @@ export default function ParentSettingsScreen({ navigation }) {
       Alert.alert(t('alerts.success'), t('parentSettings.successVolumeSet', { value: volumeValue }));
     } else {
       Alert.alert(t('alerts.error'), t('parentSettings.errorSave', { setting: t('common.volume') }));
-    }
-  };
-
-  const handleBrightnessChange = (value) => {
-    setBrightnessValue(Math.round(value));
-  };
-
-  const handleBrightnessLockToggle = async () => {
-    const newLocked = !brightnessLocked;
-
-    // If locking brightness, check and request permission first
-    if (newLocked && Platform.OS === 'android') {
-      const hasPermission = await checkWriteSettingsPermission();
-      if (!hasPermission) {
-        // Show alert and request permission
-        Alert.alert(
-          t('parentSettings.permissionTitle'),
-          t('parentSettings.permissionMessage'),
-          [
-            {
-              text: t('common.cancel'),
-              style: 'cancel',
-              onPress: () => {
-                // Don't lock if permission is denied
-                console.log('User cancelled permission request');
-              }
-            },
-            {
-              text: t('parentSettings.permissionButton'),
-              onPress: async () => {
-                await requestWriteSettingsPermission();
-                // After opening settings, wait and check if permission was granted
-                setTimeout(async () => {
-                  const permissionGranted = await checkWriteSettingsPermission();
-                  if (permissionGranted) {
-                    // Permission granted, proceed with locking
-                    await proceedWithBrightnessLock(newLocked);
-                  } else {
-                    Alert.alert(
-                      t('alerts.error'),
-                      t('parentSettings.permissionDenied') || 'Cannot lock brightness without permission to modify system settings'
-                    );
-                  }
-                }, 2000);
-              },
-            },
-          ]
-        );
-        return; // Exit early, will be handled by permission callback
-      }
-    }
-
-    // Permission already granted or unlocking, proceed
-    await proceedWithBrightnessLock(newLocked);
-  };
-
-  const proceedWithBrightnessLock = async (newLocked) => {
-    setBrightnessLocked(newLocked);
-
-    // Save immediately
-    setSaving(true);
-
-    // If unlocking, load current system brightness
-    if (!newLocked) {
-      const currentBrightness = await getBrightness();
-      setBrightnessValue(currentBrightness);
-    }
-
-    const success = await updateBrightnessSettings(brightnessValue, newLocked);
-    setSaving(false);
-
-    if (success) {
-      setBrightnessConfigured(true);
-      Alert.alert(
-        t('alerts.success'),
-        newLocked
-          ? t('parentSettings.successBrightnessLocked', { value: brightnessValue })
-          : t('parentSettings.successBrightnessUnlocked')
-      );
-    } else {
-      Alert.alert(t('alerts.error'), t('parentSettings.errorUpdate', { setting: t('common.brightness') }));
-      setBrightnessLocked(!newLocked); // Revert on failure
-    }
-  };
-
-  const handleBrightnessSave = async () => {
-    setSaving(true);
-
-    // Import setBrightness dynamically
-    const { setBrightness } = require('../utils/brightnessControl');
-
-    // First, actually set the device brightness
-    await setBrightness(brightnessValue);
-
-    // Then save settings and update monitoring
-    const success = await updateBrightnessSettings(brightnessValue, brightnessLocked);
-    setSaving(false);
-
-    if (success) {
-      setBrightnessConfigured(true);
-      Alert.alert(t('alerts.success'), t('parentSettings.successBrightnessSet', { value: brightnessValue }));
-    } else {
-      Alert.alert(t('alerts.error'), t('parentSettings.errorSave', { setting: t('common.brightness') }));
     }
   };
 
@@ -354,42 +180,30 @@ export default function ParentSettingsScreen({ navigation }) {
                 iconColor={theme.colors.primary}
                 style={styles.incrementButton}
                 onPress={() => {
-                  const newValue = Math.max(0, value - 1);
+                  const newValue = Math.max(0, value - STEP_VALUE);
                   onValueChange(newValue);
                 }}
                 disabled={saving || value <= 0}
               />
-              
+
               <View style={styles.inputWrapper}>
-                <TextInput
-                  style={styles.input}
-                  value={String(value)}
-                  onChangeText={(text) => {
-                    const numValue = parseInt(text) || 0;
-                    const clampedValue = Math.min(100, Math.max(0, numValue));
-                    onValueChange(clampedValue);
-                  }}
-                  keyboardType="numeric"
-                  maxLength={3}
-                  editable={!saving}
-                  selectTextOnFocus
-                />
+                <Text style={styles.input}>{String(value)}</Text>
                 <Text style={styles.percentSymbol}>%</Text>
               </View>
-              
+
               <IconButton
                 icon="plus"
                 size={24}
                 iconColor={theme.colors.primary}
                 style={styles.incrementButton}
                 onPress={() => {
-                  const newValue = Math.min(100, value + 1);
+                  const newValue = Math.min(100, value + STEP_VALUE);
                   onValueChange(newValue);
                 }}
                 disabled={saving || value >= 100}
               />
             </View>
-            
+
             <View style={styles.rangeLabels}>
               <Text variant="bodySmall" style={styles.rangeLabel}>
                 {t('parentSettings.minLabel')}
@@ -467,17 +281,6 @@ export default function ParentSettingsScreen({ navigation }) {
           volumeConfigured
         )}
 
-        {renderControlCard(
-          t('common.brightness'),
-          'brightness-6',
-          brightnessValue,
-          brightnessLocked,
-          handleBrightnessChange,
-          handleBrightnessLockToggle,
-          handleBrightnessSave,
-          brightnessConfigured
-        )}
-
         <Card style={styles.pinCard}>
           <Card.Content>
             <View style={styles.pinHeader}>
@@ -544,165 +347,148 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   loadingText: {
-    marginTop: 12,
+    marginTop: 16,
     color: theme.colors.text,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
+    padding: 16,
   },
   header: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   headerTitle: {
-    color: theme.colors.text,
     fontWeight: 'bold',
+    color: theme.colors.text,
+    marginBottom: 8,
   },
   headerSubtitle: {
-    color: theme.colors.text,
-    opacity: 0.6,
-    marginTop: 5,
+    color: theme.colors.textSecondary,
   },
   card: {
-    marginBottom: 20,
+    marginBottom: 16,
     borderLeftWidth: 4,
-    elevation: 3,
   },
   cardHeader: {
-    marginBottom: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    marginBottom: 10,
   },
   cardTitle: {
-    fontWeight: '600',
+    marginLeft: 8,
     color: theme.colors.text,
   },
   lockSwitch: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: theme.colors.background,
-    padding: 12,
-    borderRadius: 8,
   },
   lockLabel: {
-    fontWeight: '600',
+    marginRight: 8,
     color: theme.colors.text,
   },
   controlContainer: {
-    marginVertical: 20,
+    marginBottom: 16,
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   incrementButton: {
     margin: 0,
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: theme.colors.primary,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginHorizontal: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     backgroundColor: theme.colors.surface,
-    borderWidth: 2,
-    borderColor: theme.colors.primary,
     borderRadius: 8,
-    paddingHorizontal: 15,
-    marginHorizontal: 10,
     minWidth: 100,
+    justifyContent: 'center',
   },
   input: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: 'bold',
-    color: theme.colors.primary,
+    color: theme.colors.text,
     textAlign: 'center',
-    paddingVertical: 8,
-    minWidth: 60,
   },
   percentSymbol: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: theme.colors.primary,
-    marginLeft: 5,
+    fontSize: 20,
+    color: theme.colors.textSecondary,
+    marginLeft: 4,
   },
   rangeLabels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 10,
+    paddingHorizontal: 16,
   },
   rangeLabel: {
-    color: theme.colors.text,
-    opacity: 0.6,
+    color: theme.colors.textSecondary,
   },
   saveButton: {
-    marginTop: 10,
-    paddingVertical: 6,
+    marginTop: 8,
   },
   lockedNotice: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 15,
-    padding: 10,
-    backgroundColor: statusColors.locked.background,
+    marginTop: 12,
+    padding: 8,
+    backgroundColor: '#f0f9ff',
     borderRadius: 8,
-    gap: 5,
   },
   lockedNoticeText: {
     flex: 1,
-    color: statusColors.locked.text,
-    lineHeight: 18,
+    color: theme.colors.textSecondary,
   },
   placeholderNotice: {
-    marginTop: 12,
-    color: theme.colors.text,
-    opacity: 0.7,
+    marginTop: 8,
+    padding: 8,
+    backgroundColor: '#fffbeb',
+    borderRadius: 8,
+    color: '#92400e',
     fontStyle: 'italic',
   },
   pinCard: {
-    marginBottom: 20,
-    elevation: 3,
+    marginBottom: 16,
   },
   pinHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
-    gap: 5,
+    marginBottom: 12,
   },
   pinTitle: {
-    fontWeight: '600',
+    marginLeft: 8,
     color: theme.colors.text,
   },
   changePinButton: {
-    paddingVertical: 6,
+    marginTop: 8,
   },
   warningCard: {
-    backgroundColor: '#FFF3E0',
-    elevation: 2,
+    marginBottom: 16,
+    backgroundColor: '#fef2f2',
   },
   warningHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
-    gap: 5,
+    marginBottom: 12,
   },
   warningTitle: {
-    fontWeight: '600',
+    marginLeft: 8,
     color: theme.colors.warning,
   },
   warningText: {
-    color: theme.colors.text,
-    lineHeight: 20,
+    color: '#7f1d1d',
     marginBottom: 8,
+    lineHeight: 20,
   },
 });
