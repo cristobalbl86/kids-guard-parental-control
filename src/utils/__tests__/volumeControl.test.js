@@ -4,14 +4,11 @@ import { NativeModules, NativeEventEmitter } from 'react-native';
 jest.mock('../storage', () => ({
   getVolumeSettings: jest.fn(),
   saveVolumeSettings: jest.fn(),
-  getBrightnessSettings: jest.fn(),
-  saveBrightnessSettings: jest.fn(),
 }));
 
 // Mock enforcementService module
 jest.mock('../enforcementService', () => ({
   notifyVolumeEnforcement: jest.fn().mockResolvedValue(),
-  notifyBrightnessEnforcement: jest.fn().mockResolvedValue(),
 }));
 
 import {
