@@ -4,12 +4,10 @@ import { Alert } from 'react-native';
 import ParentSettingsScreen from '../ParentSettingsScreen';
 import * as storage from '../../utils/storage';
 import * as volumeControl from '../../utils/volumeControl';
-import * as brightnessControl from '../../utils/brightnessControl';
 
 // Mock the utilities
 jest.mock('../../utils/storage');
 jest.mock('../../utils/volumeControl');
-jest.mock('../../utils/brightnessControl');
 jest.mock('../../utils/admobControl', () => ({
   showInterstitialIfEligible: jest.fn().mockResolvedValue(false),
 }));
@@ -30,14 +28,9 @@ describe('ParentSettingsScreen', () => {
     // Default mock implementations
     storage.getAllSettings.mockResolvedValue({
       volume: { volume: 50, locked: false, isDefault: false },
-      brightness: { brightness: 50, locked: false, isDefault: false },
     });
     volumeControl.updateVolumeSettings.mockResolvedValue(true);
     volumeControl.getVolume.mockResolvedValue(50);
-    brightnessControl.updateBrightnessSettings.mockResolvedValue(true);
-    brightnessControl.getBrightness.mockResolvedValue(50);
-    brightnessControl.checkWriteSettingsPermission.mockResolvedValue(true);
-    brightnessControl.requestWriteSettingsPermission.mockResolvedValue(true);
     Alert.alert = jest.fn();
   });
 

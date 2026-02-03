@@ -5,13 +5,11 @@ import { Button, Text, Card, IconButton } from 'react-native-paper';
 import { theme, statusColors } from '../utils/theme';
 import { getAllSettings } from '../utils/storage';
 import { initializeVolumeControl, isVolumeMonitoring } from '../utils/volumeControl';
-import { initializeBrightnessControl, isBrightnessMonitoring } from '../utils/brightnessControl';
 import { t } from '../utils/i18n';
 
 export default function HomeScreen({ navigation }) {
   const [settings, setSettings] = useState({
     volume: { volume: 50, locked: false },
-    brightness: { brightness: 50, locked: false },
   });
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
@@ -23,7 +21,6 @@ export default function HomeScreen({ navigation }) {
 
   const initializeControls = async () => {
     await initializeVolumeControl();
-    await initializeBrightnessControl();
   };
 
   const loadSettings = async () => {
@@ -119,14 +116,6 @@ export default function HomeScreen({ navigation }) {
           'volume-high',
           settings.volume.locked,
           settings.volume.volume,
-          t('common.percent')
-        )}
-
-        {renderStatusCard(
-          t('common.brightness'),
-          'brightness-6',
-          settings.brightness.locked,
-          settings.brightness.brightness,
           t('common.percent')
         )}
 

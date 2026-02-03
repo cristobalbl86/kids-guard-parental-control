@@ -3,12 +3,10 @@ import { render, waitFor, fireEvent } from '@testing-library/react-native';
 import HomeScreen from '../HomeScreen';
 import * as storage from '../../utils/storage';
 import * as volumeControl from '../../utils/volumeControl';
-import * as brightnessControl from '../../utils/brightnessControl';
 
 // Mock the utilities
 jest.mock('../../utils/storage');
 jest.mock('../../utils/volumeControl');
-jest.mock('../../utils/brightnessControl');
 
 describe('HomeScreen', () => {
   const mockNavigation = {
@@ -23,12 +21,9 @@ describe('HomeScreen', () => {
     // Default mock implementations
     storage.getAllSettings.mockResolvedValue({
       volume: { volume: 50, locked: false },
-      brightness: { brightness: 50, locked: false },
     });
     volumeControl.initializeVolumeControl.mockResolvedValue(true);
-    brightnessControl.initializeBrightnessControl.mockResolvedValue(true);
     volumeControl.isVolumeMonitoring.mockResolvedValue(false);
-    brightnessControl.isBrightnessMonitoring.mockReturnValue(false);
   });
 
   describe('Rendering', () => {
@@ -40,12 +35,11 @@ describe('HomeScreen', () => {
       });
     });
 
-    it('should display volume and brightness cards', async () => {
+    it('should display volume card', async () => {
       const { getByText } = render(<HomeScreen navigation={mockNavigation} />);
 
       await waitFor(() => {
         expect(getByText('common.volume')).toBeTruthy();
-        expect(getByText('common.brightness')).toBeTruthy();
       });
     });
 
@@ -76,19 +70,17 @@ describe('HomeScreen', () => {
       });
     });
 
-    it('should initialize volume and brightness controls', async () => {
+    it('should initialize volume control', async () => {
       render(<HomeScreen navigation={mockNavigation} />);
 
       await waitFor(() => {
         expect(volumeControl.initializeVolumeControl).toHaveBeenCalled();
-        expect(brightnessControl.initializeBrightnessControl).toHaveBeenCalled();
       });
     });
 
     it('should display loaded volume settings', async () => {
       storage.getAllSettings.mockResolvedValue({
         volume: { volume: 75, locked: false },
-        brightness: { brightness: 50, locked: false },
       });
 
       const { getByText } = render(<HomeScreen navigation={mockNavigation} />);

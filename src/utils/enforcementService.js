@@ -4,7 +4,6 @@ const { EnforcementServiceModule } = NativeModules;
 
 let serviceNeeded = {
   volume: false,
-  brightness: false,
 };
 
 // Track if service start has failed to avoid repeated crash attempts
@@ -57,7 +56,7 @@ const stopService = async () => {
 
 // Check if service should be running
 const shouldServiceRun = () => {
-  return serviceNeeded.volume || serviceNeeded.brightness;
+  return serviceNeeded.volume;
 };
 
 // Update service state based on enforcement needs
@@ -95,45 +94,6 @@ export const notifyVolumeEnforcement = async (isEnforcing) => {
   }
 };
 
-// Notify that brightness enforcement needs the service
-// Also updates the foreground service with the brightness value for background enforcement
-export const notifyBrightnessEnforcement = async (isEnforcing, brightnessValue = -1) => {
-  try {
-    serviceNeeded.brightness = isEnforcing;
-
-    // Check if module is available
-    if (!EnforcementServiceModule) {
-      console.warn('[EnforcementService] EnforcementServiceModule not available');
-      return;
-    }
-
-    if (isEnforcing && brightnessValue >= 0) {
-      // Update the foreground service with brightness enforcement
-      if (EnforcementServiceModule.updateBrightnessEnforcement) {
-        await EnforcementServiceModule.updateBrightnessEnforcement(brightnessValue, true);
-        console.log(`[EnforcementService] Brightness enforcement enabled in service at ${brightnessValue}%`);
-      } else {
-        // Fallback to just starting the service
-        await updateServiceState();
-      }
-    } else {
-      // Stop brightness enforcement in the service
-      if (EnforcementServiceModule.stopBrightnessEnforcement) {
-        await EnforcementServiceModule.stopBrightnessEnforcement();
-        console.log('[EnforcementService] Brightness enforcement disabled in service');
-      }
-      // Check if we still need the service for volume
-      if (!shouldServiceRun()) {
-        await stopService();
-      }
-    }
-
-    console.log(`[EnforcementService] Brightness enforcement ${isEnforcing ? 'enabled' : 'disabled'}, service needed: ${shouldServiceRun()}`);
-  } catch (error) {
-    console.error('[EnforcementService] Error in notifyBrightnessEnforcement:', error);
-    // Don't rethrow - enforcement can still work without the service
-  }
-};
 
 // Check if service is running
 export const isServiceRunning = async () => {

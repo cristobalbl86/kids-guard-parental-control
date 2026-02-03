@@ -6,7 +6,6 @@ const KEYS = {
   FIRST_LAUNCH: 'first_launch',
   PIN: 'parent_pin',
   VOLUME_SETTINGS: 'volume_settings',
-  BRIGHTNESS_SETTINGS: 'brightness_settings',
   FAILED_ATTEMPTS: 'failed_attempts',
   LOCKOUT_UNTIL: 'lockout_until',
   LAST_AD_SHOWN: 'last_ad_shown',
@@ -20,7 +19,6 @@ export const initializeApp = async () => {
       await AsyncStorage.setItem(KEYS.FIRST_LAUNCH, 'true');
       // Initialize default settings
       await saveVolumeSettings({ volume: 50, locked: false });
-      await saveBrightnessSettings({ brightness: 50, locked: false });
     }
   } catch (error) {
     console.error('Error initializing app:', error);
@@ -169,49 +167,12 @@ export const getVolumeSettings = async () => {
   }
 };
 
-// Brightness Settings
-export const saveBrightnessSettings = async (settings) => {
-  try {
-    const payload = {
-      brightness: Math.max(0, Math.min(100, settings.brightness ?? 50)),
-      locked: !!settings.locked,
-    };
-    await AsyncStorage.setItem(KEYS.BRIGHTNESS_SETTINGS, JSON.stringify(payload));
-  } catch (error) {
-    console.error('Error saving brightness settings:', error);
-    throw error;
-  }
-};
-
-export const getBrightnessSettings = async () => {
-  try {
-    const settings = await AsyncStorage.getItem(KEYS.BRIGHTNESS_SETTINGS);
-    if (!settings) {
-      return { brightness: 50, locked: false, isDefault: true };
-    }
-
-    const parsed = JSON.parse(settings);
-    return {
-      brightness: Math.max(0, Math.min(100, parsed.brightness ?? 50)),
-      locked: !!parsed.locked,
-      isDefault: false,
-    };
-  } catch (error) {
-    console.error('Error getting brightness settings:', error);
-    return { brightness: 50, locked: false, isDefault: true };
-  }
-};
-
 // Get all settings for display
 export const getAllSettings = async () => {
   try {
-    const [volumeSettings, brightnessSettings] = await Promise.all([
-      getVolumeSettings(),
-      getBrightnessSettings(),
-    ]);
+    const volumeSettings = await getVolumeSettings();
     return {
       volume: volumeSettings,
-      brightness: brightnessSettings,
     };
   } catch (error) {
     console.error('Error getting all settings:', error);
