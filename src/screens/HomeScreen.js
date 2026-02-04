@@ -5,12 +5,15 @@ import { Button, Text, Card, IconButton } from 'react-native-paper';
 import { theme, statusColors } from '../utils/theme';
 import { getAllSettings } from '../utils/storage';
 import { initializeVolumeControl, isVolumeMonitoring } from '../utils/volumeControl';
+import { initializeScreenTimeControl, getDailyUsageSeconds, formatSeconds, formatMinutes } from '../utils/screenTimeControl';
 import { t } from '../utils/i18n';
 
 export default function HomeScreen({ navigation }) {
   const [settings, setSettings] = useState({
     volume: { volume: 50, locked: false },
+    screenTime: { limitMinutes: 120, locked: false },
   });
+  const [dailyUsageSeconds, setDailyUsageSeconds] = useState(0);
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
 
@@ -21,12 +24,23 @@ export default function HomeScreen({ navigation }) {
 
   const initializeControls = async () => {
     await initializeVolumeControl();
+    await initializeScreenTimeControl();
   };
 
   const loadSettings = async () => {
     try {
       const allSettings = await getAllSettings();
       setSettings(allSettings);
+
+      // Load daily usage if screen time is configured
+      if (allSettings.screenTime) {
+        try {
+          const usage = await getDailyUsageSeconds();
+          setDailyUsageSeconds(usage);
+        } catch (error) {
+          console.error('Error getting daily usage:', error);
+        }
+      }
     } catch (error) {
       console.error('Error loading settings:', error);
     }
@@ -117,6 +131,66 @@ export default function HomeScreen({ navigation }) {
           settings.volume.locked,
           settings.volume.volume,
           t('common.percent')
+        )}
+
+        {settings.screenTime && (
+          <Card style={[styles.card, { borderLeftColor: settings.screenTime.locked ? statusColors.locked.border : statusColors.unlocked.border }]}>
+            <Card.Content>
+              <View style={styles.cardHeader}>
+                <View style={styles.cardTitleContainer}>
+                  <IconButton
+                    icon="clock-outline"
+                    size={28}
+                    iconColor={settings.screenTime.locked ? statusColors.locked.icon : statusColors.unlocked.icon}
+                  />
+                  <Text variant="titleMedium" style={styles.cardTitle}>
+                    Screen Time Limit
+                  </Text>
+                </View>
+
+                <View style={[styles.statusBadge, { backgroundColor: settings.screenTime.locked ? statusColors.locked.background : statusColors.unlocked.background }]}>
+                  <IconButton
+                    icon={settings.screenTime.locked ? 'lock' : 'lock-open'}
+                    size={16}
+                    iconColor={settings.screenTime.locked ? statusColors.locked.icon : statusColors.unlocked.icon}
+                  />
+                  <Text style={[styles.statusText, { color: settings.screenTime.locked ? statusColors.locked.text : statusColors.unlocked.text }]}>
+                    {settings.screenTime.locked ? t('common.locked') : t('common.unlocked')}
+                  </Text>
+                </View>
+              </View>
+
+              {settings.screenTime.locked ? (
+                <>
+                  <View style={styles.valueContainer}>
+                    <Text variant="bodyMedium" style={styles.value}>
+                      Today: {formatSeconds(dailyUsageSeconds)}
+                    </Text>
+                  </View>
+                  <View style={styles.valueContainer}>
+                    <Text variant="bodyMedium" style={styles.unit}>
+                      Limit: {formatMinutes(settings.screenTime.limitMinutes)}/day
+                    </Text>
+                  </View>
+                </>
+              ) : (
+                <View style={styles.valueContainer}>
+                  <Text variant="displaySmall" style={styles.value}>
+                    {formatMinutes(settings.screenTime.limitMinutes)}
+                  </Text>
+                  <Text variant="titleMedium" style={styles.unit}>
+                    /day
+                  </Text>
+                </View>
+              )}
+
+              {settings.screenTime.locked && (
+                <Text variant="bodySmall" style={styles.lockedMessage}>
+                  Device will lock when limit is exceeded
+                </Text>
+              )}
+            </Card.Content>
+          </Card>
         )}
 
         <Card style={styles.infoCard}>

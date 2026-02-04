@@ -92,4 +92,67 @@ public class EnforcementServiceModule extends ReactContextBaseJavaModule {
         promise.resolve(serviceRunning);
     }
 
+    @ReactMethod
+    public void updateScreenTimeEnforcement(boolean enforcing, Promise promise) {
+        try {
+            if (!serviceRunning) {
+                Log.d(TAG, "Service not running, starting it first");
+                // Start the service with screen time enforcement
+                Intent serviceIntent = new Intent(reactContext, EnforcementService.class);
+                serviceIntent.setAction(EnforcementService.ACTION_UPDATE_SCREEN_TIME);
+                serviceIntent.putExtra(EnforcementService.EXTRA_SCREEN_TIME_ENFORCING, enforcing);
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    reactContext.startForegroundService(serviceIntent);
+                } else {
+                    reactContext.startService(serviceIntent);
+                }
+                serviceRunning = true;
+            } else {
+                // Service already running, send update intent
+                Intent updateIntent = new Intent(reactContext, EnforcementService.class);
+                updateIntent.setAction(EnforcementService.ACTION_UPDATE_SCREEN_TIME);
+                updateIntent.putExtra(EnforcementService.EXTRA_SCREEN_TIME_ENFORCING, enforcing);
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    reactContext.startForegroundService(updateIntent);
+                } else {
+                    reactContext.startService(updateIntent);
+                }
+            }
+
+            Log.d(TAG, "Screen time enforcement updated: enforcing=" + enforcing);
+            promise.resolve(true);
+        } catch (Exception e) {
+            Log.e(TAG, "Error updating screen time enforcement", e);
+            promise.reject("ERROR", "Failed to update screen time enforcement: " + e.getMessage());
+        }
+    }
+
+    @ReactMethod
+    public void stopScreenTimeEnforcement(Promise promise) {
+        try {
+            if (!serviceRunning) {
+                Log.d(TAG, "Service not running, nothing to stop");
+                promise.resolve(true);
+                return;
+            }
+
+            Intent stopIntent = new Intent(reactContext, EnforcementService.class);
+            stopIntent.setAction(EnforcementService.ACTION_STOP_SCREEN_TIME);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                reactContext.startForegroundService(stopIntent);
+            } else {
+                reactContext.startService(stopIntent);
+            }
+
+            Log.d(TAG, "Screen time enforcement stopped");
+            promise.resolve(true);
+        } catch (Exception e) {
+            Log.e(TAG, "Error stopping screen time enforcement", e);
+            promise.reject("ERROR", "Failed to stop screen time enforcement: " + e.getMessage());
+        }
+    }
+
 }
