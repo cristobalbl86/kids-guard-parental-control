@@ -2,10 +2,10 @@ package com.kidsguard;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.PixelFormat;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
-import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
 import android.text.InputType;
@@ -147,7 +147,7 @@ public class LockOverlayManager {
 
         // Subtitle
         TextView subtitleText = new TextView(context);
-        subtitleText.setText("Time's up for today!");
+        subtitleText.setText("Time's up!");
         subtitleText.setTextSize(18);
         subtitleText.setTextColor(0xFFCBD5E1);
         subtitleText.setGravity(Gravity.CENTER);
@@ -173,13 +173,11 @@ public class LockOverlayManager {
         // Usage text
         TextView usageText = new TextView(context);
         try {
-            int usedSeconds = ScreenTimeModule.getDailyUsageSecondsStatic(context);
             int limitSeconds = ScreenTimeModule.getLimitStatic(context);
-            String usedFormatted = formatSeconds(usedSeconds);
             String limitFormatted = formatSeconds(limitSeconds);
-            usageText.setText("Used today: " + usedFormatted + "\nDaily limit: " + limitFormatted);
+            usageText.setText("Time limit reached\nAllowed time: " + limitFormatted);
         } catch (Exception e) {
-            usageText.setText("Screen time limit exceeded");
+            usageText.setText("Screen time limit reached");
         }
         usageText.setTextSize(16);
         usageText.setTextColor(0xFFE2E8F0);
@@ -258,6 +256,16 @@ public class LockOverlayManager {
 
                 boolean isValid = PINStorageHelper.verifyPIN(context, entered);
                 if (isValid) {
+                    // Stop enforcement so the timer doesn't re-lock
+                    try {
+                        SharedPreferences prefs = context.getSharedPreferences("screen_time_prefs", Context.MODE_PRIVATE);
+                        prefs.edit()
+                            .putBoolean("enforcing", false)
+                            .putLong("timer_start_ms", 0)
+                            .apply();
+                    } catch (Exception ex) {
+                        Log.e(TAG, "Error stopping enforcement on unlock", ex);
+                    }
                     dismiss();
                 } else {
                     errorText.setVisibility(View.VISIBLE);
@@ -270,48 +278,8 @@ public class LockOverlayManager {
             LinearLayout.LayoutParams.MATCH_PARENT,
             LinearLayout.LayoutParams.WRAP_CONTENT
         );
-        unlockParams.setMargins(0, 0, 0, dpToPx(12));
         unlockButton.setLayoutParams(unlockParams);
         contentLayout.addView(unlockButton);
-
-        // Emergency call button
-        Button emergencyButton = new Button(context);
-        emergencyButton.setText("Emergency Call");
-        emergencyButton.setTextSize(14);
-        emergencyButton.setTextColor(0xFFEF4444);
-        emergencyButton.setAllCaps(false);
-        int emergPad = dpToPx(12);
-        emergencyButton.setPadding(dpToPx(32), emergPad, dpToPx(32), emergPad);
-
-        GradientDrawable emergBg = new GradientDrawable();
-        emergBg.setColor(0x00000000);
-        emergBg.setStroke(dpToPx(2), 0xFFEF4444);
-        emergBg.setCornerRadius(dpToPx(12));
-        emergencyButton.setBackground(emergBg);
-
-        emergencyButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try {
-                    Intent intent = new Intent(Intent.ACTION_DIAL);
-                    intent.setData(Uri.parse("tel:"));
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    context.startActivity(intent);
-                    // Overlay stays on top - user can only see dialer through overlay gaps
-                    // In practice, the overlay covers everything, so we temporarily
-                    // hide it briefly for the call, then re-show
-                } catch (Exception e) {
-                    Log.e(TAG, "Error launching dialer", e);
-                }
-            }
-        });
-
-        LinearLayout.LayoutParams emergParams = new LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        );
-        emergencyButton.setLayoutParams(emergParams);
-        contentLayout.addView(emergencyButton);
 
         scrollView.addView(contentLayout);
         return scrollView;

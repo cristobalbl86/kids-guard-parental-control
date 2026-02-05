@@ -7,8 +7,7 @@ import { updateVolumeSettings, getVolume } from '../utils/volumeControl';
 import {
   updateScreenTimeSettings,
   getDailyUsageSeconds,
-  checkPermission,
-  requestPermission,
+  isScreenTimeMonitoring,
   checkOverlayPermission,
   requestOverlayPermission,
   formatSeconds,
@@ -24,7 +23,6 @@ export default function ParentSettingsScreen({ navigation }) {
   const [screenTimeLimitMinutes, setScreenTimeLimitMinutes] = useState(120);
   const [screenTimeLocked, setScreenTimeLocked] = useState(false);
   const [dailyUsageSeconds, setDailyUsageSeconds] = useState(0);
-  const [hasScreenTimePermission, setHasScreenTimePermission] = useState(false);
   const [hasOverlayPerm, setHasOverlayPerm] = useState(false);
 
   const STEP_VALUE = 25;
@@ -94,7 +92,21 @@ export default function ParentSettingsScreen({ navigation }) {
 
       if (hasPersistedScreenTime) {
         setScreenTimeLimitMinutes(snapToScreenTimeStep(settings.screenTime.limitMinutes));
-        setScreenTimeLocked(settings.screenTime.locked);
+
+        // Sync lock state with native enforcement
+        // (overlay PIN unlock sets native enforcing=false but doesn't update AsyncStorage)
+        let isLocked = settings.screenTime.locked;
+        if (isLocked) {
+          const nativeEnforcing = await isScreenTimeMonitoring();
+          if (!nativeEnforcing) {
+            // Native enforcement was stopped (e.g., by PIN unlock on overlay)
+            isLocked = false;
+            // Sync AsyncStorage
+            const { saveScreenTimeSettings } = require('../utils/storage');
+            await saveScreenTimeSettings({ limitMinutes: settings.screenTime.limitMinutes, locked: false });
+          }
+        }
+        setScreenTimeLocked(isLocked);
       } else {
         setScreenTimeLimitMinutes(120);
         setScreenTimeLocked(false);
@@ -112,16 +124,12 @@ export default function ParentSettingsScreen({ navigation }) {
 
   const loadScreenTimeData = async () => {
     try {
-      const hasPermission = await checkPermission();
-      setHasScreenTimePermission(hasPermission);
-
       const overlayGranted = await checkOverlayPermission();
       setHasOverlayPerm(overlayGranted);
 
-      if (hasPermission) {
-        const usage = await getDailyUsageSeconds();
-        setDailyUsageSeconds(usage);
-      }
+      // Get elapsed timer seconds
+      const elapsed = await getDailyUsageSeconds();
+      setDailyUsageSeconds(elapsed);
     } catch (error) {
       console.error('Error loading screen time data:', error);
     }
@@ -194,28 +202,8 @@ export default function ParentSettingsScreen({ navigation }) {
   const handleScreenTimeLockToggle = async () => {
     const newLocked = !screenTimeLocked;
 
-    // If locking, check both permissions first
+    // If locking, check overlay permission first
     if (newLocked) {
-      // Check usage stats permission
-      const hasUsagePermission = await checkPermission();
-      if (!hasUsagePermission) {
-        Alert.alert(
-          'Permission Required',
-          'Screen Time Limits requires usage access permission. Grant permission in Settings?',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            {
-              text: 'Open Settings',
-              onPress: async () => {
-                await requestPermission();
-              },
-            },
-          ]
-        );
-        return;
-      }
-
-      // Check overlay permission (needed for lock screen)
       const hasOverlayPermission = await checkOverlayPermission();
       if (!hasOverlayPermission) {
         Alert.alert(
@@ -252,8 +240,8 @@ export default function ParentSettingsScreen({ navigation }) {
       Alert.alert(
         t('alerts.success'),
         newLocked
-          ? `Screen time limit locked at ${formatMinutes(screenTimeLimitMinutes)}/day`
-          : 'Screen time limit unlocked'
+          ? `Timer started: ${formatMinutes(screenTimeLimitMinutes)} from now`
+          : 'Screen time timer stopped'
       );
     } else {
       Alert.alert(t('alerts.error'), 'Failed to update screen time settings');
@@ -270,7 +258,12 @@ export default function ParentSettingsScreen({ navigation }) {
     if (success) {
       setScreenTimeConfigured(true);
       await loadScreenTimeData();
-      Alert.alert(t('alerts.success'), `Screen time limit set to ${formatMinutes(screenTimeLimitMinutes)}/day`);
+      Alert.alert(
+        t('alerts.success'),
+        screenTimeLocked
+          ? `Timer reset: ${formatMinutes(screenTimeLimitMinutes)} starting now`
+          : `Screen time limit set to ${formatMinutes(screenTimeLimitMinutes)}`
+      );
     } else {
       Alert.alert(t('alerts.error'), 'Failed to save screen time settings');
     }
@@ -420,17 +413,26 @@ export default function ParentSettingsScreen({ navigation }) {
             </View>
           </View>
 
-          {/* Current Usage Display */}
-          {hasScreenTimePermission && (
+          {/* Timer Display */}
+          {screenTimeLocked && (
             <View style={styles.usageContainer}>
-              <Text variant="bodyMedium" style={styles.usageText}>
-                Today: {formatSeconds(dailyUsageSeconds)} / {formatMinutes(screenTimeLimitMinutes)}
-              </Text>
-              <ProgressBar
-                progress={Math.min(usagePercent, 1)}
-                color={usagePercent >= 1 ? '#e74c3c' : '#3498db'}
-                style={styles.progressBar}
-              />
+              {(() => {
+                const limitSeconds = screenTimeLimitMinutes * 60;
+                const remainingSeconds = Math.max(0, limitSeconds - dailyUsageSeconds);
+                const isExpired = remainingSeconds <= 0;
+                return (
+                  <>
+                    <Text variant="bodyMedium" style={[styles.usageText, isExpired && { color: '#e74c3c' }]}>
+                      {isExpired ? 'Time expired' : `Remaining: ${formatSeconds(remainingSeconds)}`}
+                    </Text>
+                    <ProgressBar
+                      progress={Math.min(usagePercent, 1)}
+                      color={usagePercent >= 1 ? '#e74c3c' : '#3498db'}
+                      style={styles.progressBar}
+                    />
+                  </>
+                );
+              })()}
             </View>
           )}
 
@@ -477,37 +479,20 @@ export default function ParentSettingsScreen({ navigation }) {
             disabled={saving}
             loading={saving}
           >
-            Apply Screen Time Limit
+            Apply / Reset Screen Time
           </Button>
 
           {screenTimeLocked && (
             <View style={styles.lockedNotice}>
               <IconButton icon="information" size={16} iconColor={statusStyle.icon} />
               <Text variant="bodySmall" style={styles.lockedNoticeText}>
-                Device will be locked when limit is exceeded
+                Device will lock when timer runs out. Press "Apply / Reset" to start a new cycle.
               </Text>
-            </View>
-          )}
-
-          {!hasScreenTimePermission && (
-            <View style={styles.permissionNotice}>
-              <IconButton icon="alert" size={16} iconColor="#e74c3c" />
-              <Text variant="bodySmall" style={styles.permissionNoticeText}>
-                Usage access permission required.
-              </Text>
-              <Button
-                mode="outlined"
-                onPress={() => requestPermission()}
-                style={styles.permissionButton}
-                compact
-              >
-                Grant
-              </Button>
             </View>
           )}
 
           {!hasOverlayPerm && (
-            <View style={[styles.permissionNotice, { marginTop: !hasScreenTimePermission ? 8 : 12 }]}>
+            <View style={[styles.permissionNotice, { marginTop: 12 }]}>
               <IconButton icon="alert" size={16} iconColor="#e74c3c" />
               <Text variant="bodySmall" style={styles.permissionNoticeText}>
                 "Display over other apps" permission required.

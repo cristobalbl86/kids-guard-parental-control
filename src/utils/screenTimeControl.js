@@ -1,6 +1,5 @@
 import { NativeModules } from 'react-native';
 import { saveScreenTimeSettings, getScreenTimeSettings } from './storage';
-import { EnforcementServiceModule } from 'react-native';
 
 const { ScreenTimeModule } = NativeModules;
 
@@ -10,7 +9,7 @@ if (!ScreenTimeModule) {
 
 /**
  * Initialize screen time control
- * Loads saved settings and starts enforcement if needed
+ * Loads saved settings and restores enforcement service if timer is still active
  */
 export const initializeScreenTimeControl = async () => {
   try {
@@ -25,23 +24,13 @@ export const initializeScreenTimeControl = async () => {
     const settings = await getScreenTimeSettings();
     console.log('[ScreenTime] Loaded settings:', settings);
 
-    // If locked, start enforcement
+    // If locked, ensure enforcement service is running
     if (settings.locked && !settings.isDefault) {
-      const hasPermission = await checkPermission();
-      if (hasPermission) {
-        const limitSeconds = settings.limitMinutes * 60;
-        await ScreenTimeModule.startEnforcing(limitSeconds);
-
-        // Update enforcement service
-        const { EnforcementServiceModule } = NativeModules;
-        if (EnforcementServiceModule) {
-          await EnforcementServiceModule.updateScreenTimeEnforcement(true);
-        }
-
-        console.log('[ScreenTime] Enforcement started:', settings.limitMinutes, 'minutes');
-      } else {
-        console.log('[ScreenTime] Permission not granted, cannot enforce');
+      const { EnforcementServiceModule } = NativeModules;
+      if (EnforcementServiceModule) {
+        await EnforcementServiceModule.updateScreenTimeEnforcement(true);
       }
+      console.log('[ScreenTime] Enforcement service restored');
     }
 
     console.log('[ScreenTime] Screen time control initialized');
@@ -64,21 +53,6 @@ export const getDailyUsageSeconds = async () => {
   } catch (error) {
     console.error('[ScreenTime] Error getting daily usage:', error);
     return 0;
-  }
-};
-
-/**
- * Check if PACKAGE_USAGE_STATS permission is granted
- */
-export const checkPermission = async () => {
-  try {
-    if (!ScreenTimeModule) {
-      return false;
-    }
-    return await ScreenTimeModule.checkPermission();
-  } catch (error) {
-    console.error('[ScreenTime] Error checking permission:', error);
-    return false;
   }
 };
 
@@ -108,21 +82,6 @@ export const requestOverlayPermission = async () => {
     return await ScreenTimeModule.requestOverlayPermission();
   } catch (error) {
     console.error('[ScreenTime] Error requesting overlay permission:', error);
-    throw error;
-  }
-};
-
-/**
- * Request PACKAGE_USAGE_STATS permission (opens Settings)
- */
-export const requestPermission = async () => {
-  try {
-    if (!ScreenTimeModule) {
-      throw new Error('ScreenTimeModule not available');
-    }
-    return await ScreenTimeModule.requestPermission();
-  } catch (error) {
-    console.error('[ScreenTime] Error requesting permission:', error);
     throw error;
   }
 };

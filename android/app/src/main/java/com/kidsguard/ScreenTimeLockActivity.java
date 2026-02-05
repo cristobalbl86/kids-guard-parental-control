@@ -2,7 +2,7 @@ package com.kidsguard;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.net.Uri;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -25,7 +25,6 @@ public class ScreenTimeLockActivity extends Activity {
 
     private EditText pinInput;
     private Button unlockButton;
-    private Button emergencyButton;
     private TextView usageText;
     private TextView titleText;
 
@@ -95,7 +94,7 @@ public class ScreenTimeLockActivity extends Activity {
 
         // Subtitle
         TextView subtitleText = new TextView(this);
-        subtitleText.setText("Time's up for today!");
+        subtitleText.setText("Time's up!");
         subtitleText.setTextSize(18);
         subtitleText.setTextColor(0xFFCBD5E1); // Light gray
         subtitleText.setGravity(android.view.Gravity.CENTER);
@@ -188,48 +187,18 @@ public class ScreenTimeLockActivity extends Activity {
         unlockButton.setLayoutParams(unlockParams);
         contentLayout.addView(unlockButton);
 
-        // Emergency call button with outline style
-        emergencyButton = new Button(this);
-        emergencyButton.setText("Emergency Call");
-        emergencyButton.setTextSize(14);
-        emergencyButton.setTextColor(0xFFEF4444); // Red text
-        emergencyButton.setPadding(40, 25, 40, 25);
-
-        android.graphics.drawable.GradientDrawable emergencyBg = new android.graphics.drawable.GradientDrawable();
-        emergencyBg.setColor(0x00000000); // Transparent
-        emergencyBg.setStroke(2, 0xFFEF4444); // Red border
-        emergencyBg.setCornerRadius(12);
-        emergencyButton.setBackground(emergencyBg);
-
-        emergencyButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                handleEmergencyCall();
-            }
-        });
-        android.widget.LinearLayout.LayoutParams emergencyParams = new android.widget.LinearLayout.LayoutParams(
-            android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-        );
-        emergencyButton.setLayoutParams(emergencyParams);
-        contentLayout.addView(emergencyButton);
-
         mainContainer.addView(contentLayout);
         setContentView(mainContainer);
     }
 
     private void displayUsageInfo() {
         try {
-            int usedSeconds = ScreenTimeModule.getDailyUsageSecondsStatic(this);
             int limitSeconds = ScreenTimeModule.getLimitStatic(this);
-
-            String usedFormatted = formatSeconds(usedSeconds);
             String limitFormatted = formatSeconds(limitSeconds);
-
-            usageText.setText("You've used " + usedFormatted + " today\nLimit: " + limitFormatted);
+            usageText.setText("Time limit reached\nAllowed time: " + limitFormatted);
         } catch (Exception e) {
             Log.e(TAG, "Error displaying usage info", e);
-            usageText.setText("Screen time limit exceeded");
+            usageText.setText("Screen time limit reached");
         }
     }
 
@@ -253,6 +222,16 @@ public class ScreenTimeLockActivity extends Activity {
                         if (isValid) {
                             isUnlocked = true;
                             stopRelaunchMonitoring();
+                            // Stop enforcement so timer doesn't re-lock
+                            try {
+                                SharedPreferences prefs = getSharedPreferences("screen_time_prefs", MODE_PRIVATE);
+                                prefs.edit()
+                                    .putBoolean("enforcing", false)
+                                    .putLong("timer_start_ms", 0)
+                                    .apply();
+                            } catch (Exception ex) {
+                                Log.e(TAG, "Error stopping enforcement", ex);
+                            }
                             Toast.makeText(ScreenTimeLockActivity.this, "Unlocked", Toast.LENGTH_SHORT).show();
                             finish();
                         } else {
@@ -272,66 +251,6 @@ public class ScreenTimeLockActivity extends Activity {
         } catch (Exception e) {
             Log.e(TAG, "Error verifying PIN", e);
             callback.invoke(false);
-        }
-    }
-
-    private void handleEmergencyCall() {
-        try {
-            // Launch dialer for emergency call
-            Intent intent = new Intent(Intent.ACTION_DIAL);
-            intent.setData(Uri.parse("tel:"));
-            startActivity(intent);
-
-            // Schedule aggressive relaunches to return to lock screen
-            // This allows the emergency call but brings user back immediately after
-            relaunchHandler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    if (!isUnlocked && !isFinishing()) {
-                        // Check if we're still in the dialer (allow it)
-                        // Otherwise relaunch
-                        if (!isInDialer()) {
-                            relaunchActivity();
-                        } else {
-                            // Check again soon
-                            relaunchHandler.postDelayed(this, 500);
-                        }
-                    }
-                }
-            }, 1000);
-        } catch (Exception e) {
-            Log.e(TAG, "Error launching dialer", e);
-            Toast.makeText(this, "Unable to open dialer", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private boolean isInDialer() {
-        try {
-            android.app.ActivityManager activityManager = (android.app.ActivityManager) getSystemService(ACTIVITY_SERVICE);
-            if (activityManager == null) {
-                return false;
-            }
-
-            java.util.List<android.app.ActivityManager.RunningTaskInfo> tasks = activityManager.getRunningTasks(1);
-            if (tasks == null || tasks.isEmpty()) {
-                return false;
-            }
-
-            android.content.ComponentName topActivity = tasks.get(0).topActivity;
-            if (topActivity == null) {
-                return false;
-            }
-
-            String packageName = topActivity.getPackageName();
-            // Check if it's the dialer app
-            return packageName != null && (
-                packageName.contains("dialer") ||
-                packageName.contains("phone") ||
-                packageName.contains("contacts")
-            );
-        } catch (Exception e) {
-            Log.e(TAG, "Error checking dialer", e);
-            return false;
         }
     }
 
