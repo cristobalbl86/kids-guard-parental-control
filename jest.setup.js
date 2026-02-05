@@ -37,6 +37,18 @@ const mockNativeModules = {
     checkWriteSettingsPermission: jest.fn(() => Promise.resolve(true)),
     requestWriteSettingsPermission: jest.fn(() => Promise.resolve()),
   },
+  ScreenTimeModule: {
+    getDailyUsageSeconds: jest.fn(() => Promise.resolve(0)),
+    checkOverlayPermission: jest.fn(() => Promise.resolve(true)),
+    requestOverlayPermission: jest.fn(() => Promise.resolve(true)),
+    startEnforcing: jest.fn(() => Promise.resolve()),
+    stopEnforcing: jest.fn(() => Promise.resolve()),
+    isEnforcing: jest.fn(() => Promise.resolve(false)),
+  },
+  EnforcementServiceModule: {
+    updateScreenTimeEnforcement: jest.fn(() => Promise.resolve()),
+    stopScreenTimeEnforcement: jest.fn(() => Promise.resolve()),
+  },
 };
 
 // Mock NativeEventEmitter
