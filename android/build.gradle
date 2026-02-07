@@ -20,12 +20,17 @@ buildscript {
 
 apply plugin: "com.facebook.react.rootproject"
 
-// Force androidx.core to use version compatible with compileSdk 35
+// Force androidx libraries to compatible versions
 allprojects {
     configurations.all {
         resolutionStrategy {
             force 'androidx.core:core:1.15.0'
             force 'androidx.core:core-ktx:1.15.0'
+            // Fix TextInput crash on Android 11 (API 30) - AppCompat 1.4+ causes NullPointerException
+            // in ReactEditText.updateCachedSpannable when mFabricViewStateManager is not yet initialized
+            // See: https://github.com/facebook/react-native/issues/31572
+            force 'androidx.appcompat:appcompat:1.6.1'
+            force 'androidx.appcompat:appcompat-resources:1.6.1'
         }
     }
 }

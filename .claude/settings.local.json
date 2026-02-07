@@ -26,7 +26,21 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(npm start)"    
+      "Bash(npm start)",
+      "Bash(git fetch:*)",
+      "Bash(git pull:*)",
+      "Bash(git cherry-pick:*)",
+      "Bash(adb logcat:*)",
+      "Bash(./gradlew.bat app:installDebug:*)",
+      "Bash(adb shell:*)",
+      "Bash(./gradlew.bat bundleRelease:*)",
+      "Bash(./gradlew.bat clean bundleRelease -PRELEASE_STORE_PASSWORD=\"Xtobalbl.1\" -PRELEASE_KEY_PASSWORD=\"Xtobalbl.1\")",
+      "Bash(./gradlew.bat assembleDebug)",
+      "WebFetch(domain:cs.android.com)",
+      "WebSearch",
+      "Bash(del \"C:\\\\repos\\\\Claude\\\\FamilyHelperRN\\\\android\\\\app\\\\src\\\\main\\\\java\\\\com\\\\kidsguard\\\\BrightnessControlModule.java\")",
+      "Bash(./gradlew.bat:*)",
+      "WebFetch(domain:github.com)"
     ],
     "deny": [],
     "ask": []

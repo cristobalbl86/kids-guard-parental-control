@@ -64,6 +64,7 @@ public class LockOverlayManager {
             windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
 
             // Create overlay layout params - covers entire screen, stays on top of everything
+            // Use TRANSLUCENT instead of OPAQUE to allow soft keyboard to render properly
             WindowManager.LayoutParams params = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.MATCH_PARENT,
@@ -73,9 +74,11 @@ public class LockOverlayManager {
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
                     | WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
                     | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON,
-                PixelFormat.OPAQUE
+                PixelFormat.TRANSLUCENT
             );
             params.gravity = Gravity.TOP | Gravity.START;
+            // Required for keyboard input on Android 11+
+            params.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE;
 
             // Create the overlay view
             overlayView = createLockView();
