@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Button, Text, TextInput, Surface, HelperText } from 'react-native-paper';
+import { View, StyleSheet, TextInput as RNTextInput } from 'react-native';
+import { Button, Text, Surface, HelperText } from 'react-native-paper';
 import { theme } from '../utils/theme';
 import { t } from '../utils/i18n';
 
@@ -12,6 +12,7 @@ export default function ParentVerificationScreen({ navigation }) {
   const [attempts, setAttempts] = useState(0);
 
   useEffect(() => {
+    console.log('[ParentVerification] Screen mounted');
     generateProblem();
   }, []);
 
@@ -64,15 +65,21 @@ export default function ParentVerificationScreen({ navigation }) {
           </Text>
         </View>
 
-        <TextInput
-          mode="outlined"
-          label={t('parentVerification.answerLabel')}
+        <RNTextInput
+          placeholder={t('parentVerification.answerLabel')}
           value={answer}
-          onChangeText={setAnswer}
+          onChangeText={(text) => {
+            console.log('[ParentVerification] onChangeText:', text);
+            setAnswer(text);
+          }}
+          onFocus={() => console.log('[ParentVerification] TextInput onFocus')}
+          onBlur={() => console.log('[ParentVerification] TextInput onBlur')}
+          onPressIn={() => console.log('[ParentVerification] TextInput onPressIn')}
+          onPressOut={() => console.log('[ParentVerification] TextInput onPressOut')}
           keyboardType="number-pad"
-          style={styles.input}
-          error={!!error}
+          style={[styles.input, error && styles.inputError]}
           maxLength={3}
+          placeholderTextColor={theme.colors.placeholder || '#999'}
         />
 
         <HelperText type="error" visible={!!error}>
@@ -145,6 +152,17 @@ const styles = StyleSheet.create({
   },
   input: {
     marginBottom: 5,
+    borderWidth: 1,
+    borderColor: theme.colors.outline || '#ccc',
+    borderRadius: 8,
+    padding: 16,
+    fontSize: 18,
+    backgroundColor: theme.colors.surface,
+    color: theme.colors.text,
+    textAlign: 'center',
+  },
+  inputError: {
+    borderColor: theme.colors.error || '#d32f2f',
   },
   button: {
     marginTop: 20,

@@ -1,11 +1,15 @@
 import * as Keychain from 'react-native-keychain';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { NativeModules } from 'react-native';
+
+const { PINStorageModule } = NativeModules;
 
 // Keys for storage
 const KEYS = {
   FIRST_LAUNCH: 'first_launch',
   PIN: 'parent_pin',
   VOLUME_SETTINGS: 'volume_settings',
+  SCREEN_TIME_SETTINGS: 'screen_time_settings',
   FAILED_ATTEMPTS: 'failed_attempts',
   LOCKOUT_UNTIL: 'lockout_until',
   LAST_AD_SHOWN: 'last_ad_shown',
@@ -48,10 +52,38 @@ export const completeFirstLaunch = async () => {
   }
 };
 
+// Migrate existing PIN to native storage for lock screen access
+export const migratePINToNativeStorage = async () => {
+  try {
+    if (!PINStorageModule) {
+      console.warn('[Storage] PINStorageModule not available, skipping migration');
+      return;
+    }
+
+    // Read PIN from keychain
+    const credentials = await Keychain.getGenericPassword({ service: KEYS.PIN });
+    if (credentials && credentials.password) {
+      // Cache it to native SharedPreferences so overlay lock screen can verify it
+      await PINStorageModule.savePIN(credentials.password);
+      console.log('[Storage] PIN migrated to native storage successfully');
+    } else {
+      console.log('[Storage] No PIN in keychain, nothing to migrate');
+    }
+  } catch (error) {
+    console.error('[Storage] Error migrating PIN to native storage:', error);
+  }
+};
+
 // PIN Management
 export const savePIN = async (pin) => {
   try {
     await Keychain.setGenericPassword(KEYS.PIN, pin, { service: KEYS.PIN });
+
+    // Also cache PIN in native storage for lock screen access
+    if (PINStorageModule) {
+      await PINStorageModule.savePIN(pin);
+      console.log('[Storage] PIN cached for native access');
+    }
   } catch (error) {
     console.error('Error saving PIN:', error);
     throw error;
@@ -167,12 +199,49 @@ export const getVolumeSettings = async () => {
   }
 };
 
+// Screen Time Settings
+export const saveScreenTimeSettings = async (settings) => {
+  try {
+    const payload = {
+      limitMinutes: Math.max(15, Math.min(480, settings.limitMinutes ?? 120)),
+      locked: !!settings.locked,
+    };
+    await AsyncStorage.setItem(KEYS.SCREEN_TIME_SETTINGS, JSON.stringify(payload));
+  } catch (error) {
+    console.error('Error saving screen time settings:', error);
+    throw error;
+  }
+};
+
+export const getScreenTimeSettings = async () => {
+  try {
+    const settings = await AsyncStorage.getItem(KEYS.SCREEN_TIME_SETTINGS);
+    if (!settings) {
+      return { limitMinutes: 120, locked: false, isDefault: true }; // Default 2 hours
+    }
+
+    const parsed = JSON.parse(settings);
+    return {
+      limitMinutes: Math.max(15, Math.min(480, parsed.limitMinutes ?? 120)),
+      locked: !!parsed.locked,
+      isDefault: false,
+    };
+  } catch (error) {
+    console.error('Error getting screen time settings:', error);
+    return { limitMinutes: 120, locked: false, isDefault: true };
+  }
+};
+
 // Get all settings for display
 export const getAllSettings = async () => {
   try {
-    const volumeSettings = await getVolumeSettings();
+    const [volumeSettings, screenTimeSettings] = await Promise.all([
+      getVolumeSettings(),
+      getScreenTimeSettings(),
+    ]);
     return {
       volume: volumeSettings,
+      screenTime: screenTimeSettings,
     };
   } catch (error) {
     console.error('Error getting all settings:', error);

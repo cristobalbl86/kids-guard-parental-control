@@ -22,9 +22,10 @@ import ParentSettingsScreen from './src/screens/ParentSettingsScreen';
 import PINEntryScreen from './src/screens/PINEntryScreen';
 
 // Utils
-import {checkFirstLaunch, initializeApp} from './src/utils/storage';
+import {checkFirstLaunch, initializeApp, migratePINToNativeStorage} from './src/utils/storage';
 import {theme} from './src/utils/theme';
 import {initializeVolumeControl} from './src/utils/volumeControl';
+import {initializeScreenTimeControl} from './src/utils/screenTimeControl';
 import {initializeAdMob, showInterstitialIfEligible} from './src/utils/admobControl';
 import {requestPostNotificationsPermission} from './src/utils/permissions';
 
@@ -79,11 +80,15 @@ export default function App() {
       // Initialize control modules if setup is complete
       if (!firstLaunch) {
         try {
+          // Migrate PIN to native storage so overlay lock screen can verify it
+          await migratePINToNativeStorage();
+
           // Request POST_NOTIFICATIONS permission on Android 13+ before initializing controls
           // This is needed for the foreground service that keeps enforcement active
           await requestPostNotificationsPermission();
 
           await initializeVolumeControl();
+          await initializeScreenTimeControl();
           await initializeAdMob();
           // Show ad after initialization if eligible
           setTimeout(async () => {

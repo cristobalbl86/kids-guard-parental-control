@@ -6,6 +6,8 @@ import {
   changePIN,
   saveVolumeSettings,
   getVolumeSettings,
+  saveScreenTimeSettings,
+  getScreenTimeSettings,
   getAllSettings,
   initializeApp,
   checkFirstLaunch,
@@ -282,10 +284,13 @@ describe('Storage Utility', () => {
 
 
   describe('getAllSettings', () => {
-    it('should return volume settings', async () => {
+    it('should return volume and screen time settings', async () => {
       AsyncStorage.getItem.mockImplementation((key) => {
         if (key === 'volume_settings') {
           return Promise.resolve(JSON.stringify({ volume: 60, locked: true }));
+        }
+        if (key === 'screen_time_settings') {
+          return Promise.resolve(JSON.stringify({ limitMinutes: 180, locked: true }));
         }
         return Promise.resolve(null);
       });
@@ -294,16 +299,113 @@ describe('Storage Utility', () => {
 
       expect(allSettings).toEqual({
         volume: { volume: 60, locked: true, isDefault: false },
+        screenTime: { limitMinutes: 180, locked: true, isDefault: false },
       });
     });
 
-    it('should return default volume settings if none exist', async () => {
+    it('should return default settings if none exist', async () => {
       AsyncStorage.getItem.mockResolvedValue(null);
 
       const allSettings = await getAllSettings();
 
       expect(allSettings).toEqual({
         volume: { volume: 50, locked: false, isDefault: true },
+        screenTime: { limitMinutes: 120, locked: false, isDefault: true },
+      });
+    });
+  });
+
+  describe('Screen Time Settings', () => {
+    describe('saveScreenTimeSettings', () => {
+      it('should save screen time settings to AsyncStorage', async () => {
+        await saveScreenTimeSettings({ limitMinutes: 180, locked: true });
+
+        expect(AsyncStorage.setItem).toHaveBeenCalledWith(
+          'screen_time_settings',
+          JSON.stringify({ limitMinutes: 180, locked: true })
+        );
+      });
+
+      it('should clamp limit minutes to minimum 15', async () => {
+        await saveScreenTimeSettings({ limitMinutes: 5, locked: false });
+
+        expect(AsyncStorage.setItem).toHaveBeenCalledWith(
+          'screen_time_settings',
+          JSON.stringify({ limitMinutes: 15, locked: false })
+        );
+      });
+
+      it('should clamp limit minutes to maximum 480', async () => {
+        await saveScreenTimeSettings({ limitMinutes: 600, locked: false });
+
+        expect(AsyncStorage.setItem).toHaveBeenCalledWith(
+          'screen_time_settings',
+          JSON.stringify({ limitMinutes: 480, locked: false })
+        );
+      });
+
+      it('should use default limit minutes if not provided', async () => {
+        await saveScreenTimeSettings({ locked: false });
+
+        expect(AsyncStorage.setItem).toHaveBeenCalledWith(
+          'screen_time_settings',
+          JSON.stringify({ limitMinutes: 120, locked: false })
+        );
+      });
+
+      it('should handle AsyncStorage errors', async () => {
+        AsyncStorage.setItem.mockRejectedValue(new Error('Storage error'));
+
+        await expect(saveScreenTimeSettings({ limitMinutes: 180, locked: true })).rejects.toThrow('Storage error');
+      });
+    });
+
+    describe('getScreenTimeSettings', () => {
+      it('should retrieve screen time settings from AsyncStorage', async () => {
+        AsyncStorage.getItem.mockResolvedValue(
+          JSON.stringify({ limitMinutes: 240, locked: true })
+        );
+
+        const settings = await getScreenTimeSettings();
+
+        expect(settings).toEqual({ limitMinutes: 240, locked: true, isDefault: false });
+      });
+
+      it('should return default settings if none exist', async () => {
+        AsyncStorage.getItem.mockResolvedValue(null);
+
+        const settings = await getScreenTimeSettings();
+
+        expect(settings).toEqual({ limitMinutes: 120, locked: false, isDefault: true });
+      });
+
+      it('should handle AsyncStorage errors gracefully', async () => {
+        AsyncStorage.getItem.mockRejectedValue(new Error('Storage error'));
+
+        const settings = await getScreenTimeSettings();
+
+        expect(settings).toEqual({ limitMinutes: 120, locked: false, isDefault: true });
+      });
+
+      it('should clamp invalid stored limit minutes to valid range', async () => {
+        AsyncStorage.getItem.mockResolvedValue(
+          JSON.stringify({ limitMinutes: 1000, locked: false })
+        );
+
+        const settings = await getScreenTimeSettings();
+
+        expect(settings.limitMinutes).toBe(480); // Clamped to maximum
+      });
+
+      it('should ensure locked is boolean', async () => {
+        AsyncStorage.getItem.mockResolvedValue(
+          JSON.stringify({ limitMinutes: 120, locked: 'true' })
+        );
+
+        const settings = await getScreenTimeSettings();
+
+        expect(settings.locked).toBe(true);
+        expect(typeof settings.locked).toBe('boolean');
       });
     });
   });

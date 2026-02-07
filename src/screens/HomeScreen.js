@@ -5,12 +5,15 @@ import { Button, Text, Card, IconButton } from 'react-native-paper';
 import { theme, statusColors } from '../utils/theme';
 import { getAllSettings } from '../utils/storage';
 import { initializeVolumeControl, isVolumeMonitoring } from '../utils/volumeControl';
+import { initializeScreenTimeControl, getDailyUsageSeconds, isScreenTimeMonitoring, formatSeconds, formatMinutes } from '../utils/screenTimeControl';
 import { t } from '../utils/i18n';
 
 export default function HomeScreen({ navigation }) {
   const [settings, setSettings] = useState({
     volume: { volume: 50, locked: false },
+    screenTime: { limitMinutes: 120, locked: false },
   });
+  const [dailyUsageSeconds, setDailyUsageSeconds] = useState(0);
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
 
@@ -21,12 +24,33 @@ export default function HomeScreen({ navigation }) {
 
   const initializeControls = async () => {
     await initializeVolumeControl();
+    await initializeScreenTimeControl();
   };
 
   const loadSettings = async () => {
     try {
       const allSettings = await getAllSettings();
       setSettings(allSettings);
+
+      // Load screen time data and sync lock state
+      if (allSettings.screenTime) {
+        try {
+          // Sync lock state with native enforcement
+          if (allSettings.screenTime.locked) {
+            const nativeEnforcing = await isScreenTimeMonitoring();
+            if (!nativeEnforcing) {
+              allSettings.screenTime.locked = false;
+              const { saveScreenTimeSettings } = require('../utils/storage');
+              await saveScreenTimeSettings({ limitMinutes: allSettings.screenTime.limitMinutes, locked: false });
+            }
+          }
+
+          const elapsed = await getDailyUsageSeconds();
+          setDailyUsageSeconds(elapsed);
+        } catch (error) {
+          console.error('Error getting screen time data:', error);
+        }
+      }
     } catch (error) {
       console.error('Error loading settings:', error);
     }
@@ -117,6 +141,70 @@ export default function HomeScreen({ navigation }) {
           settings.volume.locked,
           settings.volume.volume,
           t('common.percent')
+        )}
+
+        {settings.screenTime && (
+          <Card style={[styles.card, { borderLeftColor: settings.screenTime.locked ? statusColors.locked.border : statusColors.unlocked.border }]}>
+            <Card.Content>
+              <View style={styles.cardHeader}>
+                <View style={styles.cardTitleContainer}>
+                  <IconButton
+                    icon="clock-outline"
+                    size={28}
+                    iconColor={settings.screenTime.locked ? statusColors.locked.icon : statusColors.unlocked.icon}
+                  />
+                  <Text variant="titleMedium" style={styles.cardTitle}>
+                    Screen Time Limit
+                  </Text>
+                </View>
+
+                <View style={[styles.statusBadge, { backgroundColor: settings.screenTime.locked ? statusColors.locked.background : statusColors.unlocked.background }]}>
+                  <IconButton
+                    icon={settings.screenTime.locked ? 'lock' : 'lock-open'}
+                    size={16}
+                    iconColor={settings.screenTime.locked ? statusColors.locked.icon : statusColors.unlocked.icon}
+                  />
+                  <Text style={[styles.statusText, { color: settings.screenTime.locked ? statusColors.locked.text : statusColors.unlocked.text }]}>
+                    {settings.screenTime.locked ? t('common.locked') : t('common.unlocked')}
+                  </Text>
+                </View>
+              </View>
+
+              {settings.screenTime.locked ? (
+                (() => {
+                  const limitSeconds = settings.screenTime.limitMinutes * 60;
+                  const remainingSeconds = Math.max(0, limitSeconds - dailyUsageSeconds);
+                  const isExpired = remainingSeconds <= 0;
+                  return (
+                    <>
+                      <View style={styles.valueContainer}>
+                        <Text variant="bodyMedium" style={[styles.value, isExpired && { color: '#e74c3c' }]}>
+                          {isExpired ? 'Time expired' : `Remaining: ${formatSeconds(remainingSeconds)}`}
+                        </Text>
+                      </View>
+                      <View style={styles.valueContainer}>
+                        <Text variant="bodyMedium" style={styles.unit}>
+                          Limit: {formatMinutes(settings.screenTime.limitMinutes)}
+                        </Text>
+                      </View>
+                    </>
+                  );
+                })()
+              ) : (
+                <View style={styles.valueContainer}>
+                  <Text variant="displaySmall" style={styles.value}>
+                    {formatMinutes(settings.screenTime.limitMinutes)}
+                  </Text>
+                </View>
+              )}
+
+              {settings.screenTime.locked && (
+                <Text variant="bodySmall" style={styles.lockedMessage}>
+                  Device will lock when time runs out
+                </Text>
+              )}
+            </Card.Content>
+          </Card>
         )}
 
         <Card style={styles.infoCard}>
