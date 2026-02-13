@@ -1,0 +1,36 @@
+name: Required Tests
+
+# This workflow runs all tests and is the required check for PRs
+# Configure this as a required status check in branch protection rules
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  # Fast-fail check - runs individual suites in parallel for faster feedback
+  quick-check:
+    name: Quick Test Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - { name: 'Core', command: 'test:core' }
+          - { name: 'Filters', command: 'test:filters' }
+          - { name: 'UI', command: 'test:ui' }
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - run: npm ci
+      - name: Run ${{ matrix.suite.name }} tests
+        run: npm run ${{ matrix.suite.command }}
+        env:
+          CI: true
