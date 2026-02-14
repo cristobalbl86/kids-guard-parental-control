@@ -1,3 +1,16 @@
 <resources>
     <string name="app_name">Kids guard - Parental control</string>
+
+    <!-- Screen Time Lock Screen -->
+    <string name="screen_time_title">Screen Time Limit</string>
+    <string name="screen_time_times_up">Time\'s up!</string>
+    <string name="screen_time_enter_pin">Enter parent PIN to unlock</string>
+    <string name="screen_time_pin_hint">••••</string>
+    <string name="screen_time_unlock">UNLOCK</string>
+    <string name="screen_time_limit_reached">Time limit reached\nAllowed time: %s</string>
+    <string name="screen_time_limit_reached_fallback">Screen time limit reached</string>
+    <string name="screen_time_enter_pin_toast">Please enter PIN</string>
+    <string name="screen_time_unlocked">Unlocked</string>
+    <string name="screen_time_incorrect_pin">Incorrect PIN</string>
+    <string name="screen_time_only_parent">Only parent can unlock</string>
 </resources>

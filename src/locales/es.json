@@ -104,6 +104,28 @@
     "errorFailed": "Error al cambiar el PIN",
     "successMessage": "PIN cambiado exitosamente"
   },
+  "screenTime": {
+    "title": "Límite de Tiempo de Pantalla",
+    "timeExpired": "Tiempo agotado",
+    "remaining": "Restante: {{time}}",
+    "limit": "Límite: {{time}}",
+    "minLabel": "15 min",
+    "maxLabel": "8h (480 min)",
+    "applyButton": "Aplicar / Reiniciar Tiempo",
+    "lockedNotice": "El dispositivo se bloqueará cuando se agote el tiempo. Presiona \"Aplicar / Reiniciar\" para iniciar un nuevo ciclo.",
+    "lockedMessage": "El dispositivo se bloqueará cuando se agote el tiempo",
+    "permissionRequired": "Permiso Requerido",
+    "overlayPermissionMessage": "El Límite de Tiempo de Pantalla requiere el permiso \"Mostrar sobre otras aplicaciones\" para mostrar la pantalla de bloqueo. ¿Otorgar permiso en Configuración?",
+    "overlayPermissionNotice": "Se requiere el permiso \"Mostrar sobre otras aplicaciones\".",
+    "grantButton": "Otorgar",
+    "openSettings": "Abrir Configuración",
+    "successTimerStarted": "Temporizador iniciado: {{time}} desde ahora",
+    "successTimerStopped": "Temporizador de tiempo de pantalla detenido",
+    "successTimerReset": "Temporizador reiniciado: {{time}} desde ahora",
+    "successLimitSet": "Límite de tiempo de pantalla establecido en {{time}}",
+    "errorUpdate": "Error al actualizar la configuración de tiempo de pantalla",
+    "errorSave": "Error al guardar la configuración de tiempo de pantalla"
+  },
   "alerts": {
     "success": "Éxito",
     "error": "Error"

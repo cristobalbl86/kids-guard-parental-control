@@ -84,7 +84,7 @@ public class ScreenTimeLockActivity extends Activity {
 
         // Title
         titleText = new TextView(this);
-        titleText.setText("Screen Time Limit");
+        titleText.setText(getString(R.string.screen_time_title));
         titleText.setTextSize(28);
         titleText.setTextColor(0xFFFFFFFF);
         titleText.setGravity(android.view.Gravity.CENTER);
@@ -94,7 +94,7 @@ public class ScreenTimeLockActivity extends Activity {
 
         // Subtitle
         TextView subtitleText = new TextView(this);
-        subtitleText.setText("Time's up!");
+        subtitleText.setText(getString(R.string.screen_time_times_up));
         subtitleText.setTextSize(18);
         subtitleText.setTextColor(0xFFCBD5E1); // Light gray
         subtitleText.setGravity(android.view.Gravity.CENTER);
@@ -130,7 +130,7 @@ public class ScreenTimeLockActivity extends Activity {
 
         // Instruction text
         TextView instructionText = new TextView(this);
-        instructionText.setText("Enter parent PIN to unlock");
+        instructionText.setText(getString(R.string.screen_time_enter_pin));
         instructionText.setTextSize(14);
         instructionText.setTextColor(0xFF94A3B8);
         instructionText.setGravity(android.view.Gravity.CENTER);
@@ -139,7 +139,7 @@ public class ScreenTimeLockActivity extends Activity {
 
         // PIN input with rounded corners
         pinInput = new EditText(this);
-        pinInput.setHint("••••");
+        pinInput.setHint(getString(R.string.screen_time_pin_hint));
         pinInput.setHintTextColor(0xFF64748B);
         pinInput.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD);
         pinInput.setTextSize(24);
@@ -162,7 +162,7 @@ public class ScreenTimeLockActivity extends Activity {
 
         // Unlock button with rounded corners
         unlockButton = new Button(this);
-        unlockButton.setText("UNLOCK");
+        unlockButton.setText(getString(R.string.screen_time_unlock));
         unlockButton.setTextSize(16);
         unlockButton.setTextColor(0xFFFFFFFF);
         unlockButton.setTypeface(null, android.graphics.Typeface.BOLD);
@@ -195,10 +195,10 @@ public class ScreenTimeLockActivity extends Activity {
         try {
             int limitSeconds = ScreenTimeModule.getLimitStatic(this);
             String limitFormatted = formatSeconds(limitSeconds);
-            usageText.setText("Time limit reached\nAllowed time: " + limitFormatted);
+            usageText.setText(getString(R.string.screen_time_limit_reached, limitFormatted));
         } catch (Exception e) {
             Log.e(TAG, "Error displaying usage info", e);
-            usageText.setText("Screen time limit reached");
+            usageText.setText(getString(R.string.screen_time_limit_reached_fallback));
         }
     }
 
@@ -206,7 +206,7 @@ public class ScreenTimeLockActivity extends Activity {
         String enteredPin = pinInput.getText().toString();
 
         if (enteredPin.isEmpty()) {
-            Toast.makeText(this, "Please enter PIN", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.screen_time_enter_pin_toast), Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -232,10 +232,10 @@ public class ScreenTimeLockActivity extends Activity {
                             } catch (Exception ex) {
                                 Log.e(TAG, "Error stopping enforcement", ex);
                             }
-                            Toast.makeText(ScreenTimeLockActivity.this, "Unlocked", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(ScreenTimeLockActivity.this, getString(R.string.screen_time_unlocked), Toast.LENGTH_SHORT).show();
                             finish();
                         } else {
-                            Toast.makeText(ScreenTimeLockActivity.this, "Incorrect PIN", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(ScreenTimeLockActivity.this, getString(R.string.screen_time_incorrect_pin), Toast.LENGTH_SHORT).show();
                             pinInput.setText("");
                         }
                     }
@@ -257,7 +257,7 @@ public class ScreenTimeLockActivity extends Activity {
     @Override
     public void onBackPressed() {
         // Prevent back button from dismissing the lock screen
-        Toast.makeText(this, "Only parent can unlock", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, getString(R.string.screen_time_only_parent), Toast.LENGTH_SHORT).show();
     }
 
     @Override

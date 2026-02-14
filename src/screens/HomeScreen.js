@@ -154,7 +154,7 @@ export default function HomeScreen({ navigation }) {
                     iconColor={settings.screenTime.locked ? statusColors.locked.icon : statusColors.unlocked.icon}
                   />
                   <Text variant="titleMedium" style={styles.cardTitle}>
-                    Screen Time Limit
+                    {t('screenTime.title')}
                   </Text>
                 </View>
 
@@ -179,12 +179,12 @@ export default function HomeScreen({ navigation }) {
                     <>
                       <View style={styles.valueContainer}>
                         <Text variant="bodyMedium" style={[styles.value, isExpired && { color: '#e74c3c' }]}>
-                          {isExpired ? 'Time expired' : `Remaining: ${formatSeconds(remainingSeconds)}`}
+                          {isExpired ? t('screenTime.timeExpired') : t('screenTime.remaining', { time: formatSeconds(remainingSeconds) })}
                         </Text>
                       </View>
                       <View style={styles.valueContainer}>
                         <Text variant="bodyMedium" style={styles.unit}>
-                          Limit: {formatMinutes(settings.screenTime.limitMinutes)}
+                          {t('screenTime.limit', { time: formatMinutes(settings.screenTime.limitMinutes) })}
                         </Text>
                       </View>
                     </>
@@ -200,7 +200,7 @@ export default function HomeScreen({ navigation }) {
 
               {settings.screenTime.locked && (
                 <Text variant="bodySmall" style={styles.lockedMessage}>
-                  Device will lock when time runs out
+                  {t('screenTime.lockedMessage')}
                 </Text>
               )}
             </Card.Content>
@@ -274,10 +274,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
+    flex: 1,
+    flexShrink: 1,
   },
   cardTitle: {
     fontWeight: '600',
     color: theme.colors.text,
+    flexShrink: 1,
   },
   statusBadge: {
     flexDirection: 'row',
@@ -286,6 +289,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 16,
     gap: 2,
+    flexShrink: 0,
   },
   statusText: {
     fontSize: 12,

@@ -207,12 +207,12 @@ export default function ParentSettingsScreen({ navigation }) {
       const hasOverlayPermission = await checkOverlayPermission();
       if (!hasOverlayPermission) {
         Alert.alert(
-          'Permission Required',
-          'Screen Time Limits requires "Display over other apps" permission to show the lock screen. Grant permission in Settings?',
+          t('screenTime.permissionRequired'),
+          t('screenTime.overlayPermissionMessage'),
           [
-            { text: 'Cancel', style: 'cancel' },
+            { text: t('common.cancel'), style: 'cancel' },
             {
-              text: 'Open Settings',
+              text: t('screenTime.openSettings'),
               onPress: async () => {
                 await requestOverlayPermission();
               },
@@ -240,11 +240,11 @@ export default function ParentSettingsScreen({ navigation }) {
       Alert.alert(
         t('alerts.success'),
         newLocked
-          ? `Timer started: ${formatMinutes(screenTimeLimitMinutes)} from now`
-          : 'Screen time timer stopped'
+          ? t('screenTime.successTimerStarted', { time: formatMinutes(screenTimeLimitMinutes) })
+          : t('screenTime.successTimerStopped')
       );
     } else {
-      Alert.alert(t('alerts.error'), 'Failed to update screen time settings');
+      Alert.alert(t('alerts.error'), t('screenTime.errorUpdate'));
       setScreenTimeLocked(!newLocked); // Revert on failure
     }
   };
@@ -261,11 +261,11 @@ export default function ParentSettingsScreen({ navigation }) {
       Alert.alert(
         t('alerts.success'),
         screenTimeLocked
-          ? `Timer reset: ${formatMinutes(screenTimeLimitMinutes)} starting now`
-          : `Screen time limit set to ${formatMinutes(screenTimeLimitMinutes)}`
+          ? t('screenTime.successTimerReset', { time: formatMinutes(screenTimeLimitMinutes) })
+          : t('screenTime.successLimitSet', { time: formatMinutes(screenTimeLimitMinutes) })
       );
     } else {
-      Alert.alert(t('alerts.error'), 'Failed to save screen time settings');
+      Alert.alert(t('alerts.error'), t('screenTime.errorSave'));
     }
   };
 
@@ -396,7 +396,7 @@ export default function ParentSettingsScreen({ navigation }) {
             <View style={styles.titleRow}>
               <IconButton icon="clock-outline" size={28} iconColor={theme.colors.primary} />
               <Text variant="titleLarge" style={styles.cardTitle}>
-                Screen Time Limit
+                {t('screenTime.title')}
               </Text>
             </View>
 
@@ -423,7 +423,7 @@ export default function ParentSettingsScreen({ navigation }) {
                 return (
                   <>
                     <Text variant="bodyMedium" style={[styles.usageText, isExpired && { color: '#e74c3c' }]}>
-                      {isExpired ? 'Time expired' : `Remaining: ${formatSeconds(remainingSeconds)}`}
+                      {isExpired ? t('screenTime.timeExpired') : t('screenTime.remaining', { time: formatSeconds(remainingSeconds) })}
                     </Text>
                     <ProgressBar
                       progress={Math.min(usagePercent, 1)}
@@ -464,10 +464,10 @@ export default function ParentSettingsScreen({ navigation }) {
 
             <View style={styles.rangeLabels}>
               <Text variant="bodySmall" style={styles.rangeLabel}>
-                15 min
+                {t('screenTime.minLabel')}
               </Text>
               <Text variant="bodySmall" style={styles.rangeLabel}>
-                8h (480 min)
+                {t('screenTime.maxLabel')}
               </Text>
             </View>
           </View>
@@ -479,14 +479,14 @@ export default function ParentSettingsScreen({ navigation }) {
             disabled={saving}
             loading={saving}
           >
-            Apply / Reset Screen Time
+            {t('screenTime.applyButton')}
           </Button>
 
           {screenTimeLocked && (
             <View style={styles.lockedNotice}>
               <IconButton icon="information" size={16} iconColor={statusStyle.icon} />
               <Text variant="bodySmall" style={styles.lockedNoticeText}>
-                Device will lock when timer runs out. Press "Apply / Reset" to start a new cycle.
+                {t('screenTime.lockedNotice')}
               </Text>
             </View>
           )}
@@ -495,7 +495,7 @@ export default function ParentSettingsScreen({ navigation }) {
             <View style={[styles.permissionNotice, { marginTop: 12 }]}>
               <IconButton icon="alert" size={16} iconColor="#e74c3c" />
               <Text variant="bodySmall" style={styles.permissionNoticeText}>
-                "Display over other apps" permission required.
+                {t('screenTime.overlayPermissionNotice')}
               </Text>
               <Button
                 mode="outlined"
@@ -503,7 +503,7 @@ export default function ParentSettingsScreen({ navigation }) {
                 style={styles.permissionButton}
                 compact
               >
-                Grant
+                {t('screenTime.grantButton')}
               </Button>
             </View>
           )}
@@ -657,14 +657,18 @@ const styles = StyleSheet.create({
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+    flexShrink: 1,
   },
   cardTitle: {
     marginLeft: 8,
     color: theme.colors.text,
+    flexShrink: 1,
   },
   lockSwitch: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexShrink: 0,
   },
   lockLabel: {
     marginRight: 8,
