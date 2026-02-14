@@ -104,6 +104,28 @@
     "errorFailed": "Failed to change PIN",
     "successMessage": "PIN changed successfully"
   },
+  "screenTime": {
+    "title": "Screen Time Limit",
+    "timeExpired": "Time expired",
+    "remaining": "Remaining: {{time}}",
+    "limit": "Limit: {{time}}",
+    "minLabel": "15 min",
+    "maxLabel": "8h (480 min)",
+    "applyButton": "Apply / Reset Screen Time",
+    "lockedNotice": "Device will lock when timer runs out. Press \"Apply / Reset\" to start a new cycle.",
+    "lockedMessage": "Device will lock when time runs out",
+    "permissionRequired": "Permission Required",
+    "overlayPermissionMessage": "Screen Time Limits requires \"Display over other apps\" permission to show the lock screen. Grant permission in Settings?",
+    "overlayPermissionNotice": "\"Display over other apps\" permission required.",
+    "grantButton": "Grant",
+    "openSettings": "Open Settings",
+    "successTimerStarted": "Timer started: {{time}} from now",
+    "successTimerStopped": "Screen time timer stopped",
+    "successTimerReset": "Timer reset: {{time}} starting now",
+    "successLimitSet": "Screen time limit set to {{time}}",
+    "errorUpdate": "Failed to update screen time settings",
+    "errorSave": "Failed to save screen time settings"
+  },
   "alerts": {
     "success": "Success",
     "error": "Error"
