@@ -8,7 +8,7 @@
 
 const AdMobConfig = {
   // Set to true to use test ads, false for production ads
-  USE_TEST_ADS: true,
+  USE_TEST_ADS: false,
 
   // Your AdMob App ID
   APP_ID: 'ca-app-pub-6115655644033546~6577236738',
