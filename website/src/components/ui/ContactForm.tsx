@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Send, CheckCircle, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { submitContactMessage } from '@/lib/supabase';
+import { FORMSPREE_ID } from '@/lib/constants';
 
 type FormStatus = 'idle' | 'sending' | 'success' | 'error';
 
@@ -14,20 +14,39 @@ export function ContactForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!FORMSPREE_ID) {
+      setStatus('error');
+      setErrorMsg(
+        'Contact form is not yet configured. Please email us directly.'
+      );
+      return;
+    }
+
     setStatus('sending');
     setErrorMsg('');
 
     try {
-      await submitContactMessage(form);
-      setStatus('success');
-      setForm({ name: '', email: '', subject: '', message: '' });
-    } catch (err) {
+      const res = await fetch(`https://formspree.io/f/${FORMSPREE_ID}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          _subject: form.subject,
+          message: form.message,
+        }),
+      });
+
+      if (res.ok) {
+        setStatus('success');
+        setForm({ name: '', email: '', subject: '', message: '' });
+      } else {
+        throw new Error('Form submission failed');
+      }
+    } catch {
       setStatus('error');
-      setErrorMsg(
-        err instanceof Error && err.message.includes('not configured')
-          ? 'Contact form is not yet configured. Please email us directly.'
-          : 'Failed to send message. Please try again or email us directly.'
-      );
+      setErrorMsg('Failed to send message. Please try again or email us directly.');
     }
   };
 
@@ -60,6 +79,7 @@ export function ContactForm() {
           </label>
           <input
             id="name"
+            name="name"
             type="text"
             required
             value={form.name}
@@ -78,6 +98,7 @@ export function ContactForm() {
           </label>
           <input
             id="email"
+            name="email"
             type="email"
             required
             value={form.email}
@@ -98,6 +119,7 @@ export function ContactForm() {
         </label>
         <input
           id="subject"
+          name="subject"
           type="text"
           required
           value={form.subject}
@@ -117,6 +139,7 @@ export function ContactForm() {
         </label>
         <textarea
           id="message"
+          name="message"
           required
           rows={5}
           value={form.message}
