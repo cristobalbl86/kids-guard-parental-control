@@ -1,0 +1,106 @@
+import { Shield, Heart } from 'lucide-react';
+import { APP_META } from '@/lib/constants';
+import { PlayStoreBadge } from '@/components/ui/PlayStoreBadge';
+import Link from 'next/link';
+
+export function Footer() {
+  return (
+    <footer className="bg-slate-900 dark:bg-slate-950 text-slate-400 border-t border-slate-800">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          {/* Brand */}
+          <div className="md:col-span-1">
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-brand-primary flex items-center justify-center">
+                <Shield className="w-5 h-5 text-white" />
+              </div>
+              <span className="font-[family-name:var(--font-jakarta)] font-bold text-lg text-white">
+                {APP_META.name}
+              </span>
+            </div>
+            <p className="text-sm leading-relaxed mb-4">{APP_META.tagline}</p>
+            <PlayStoreBadge size="sm" />
+          </div>
+
+          {/* Product */}
+          <div>
+            <h4 className="font-semibold text-white mb-4">Product</h4>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <a href="/#features" className="hover:text-white transition-colors">
+                  Features
+                </a>
+              </li>
+              <li>
+                <a href="/#benefits" className="hover:text-white transition-colors">
+                  Benefits
+                </a>
+              </li>
+              <li>
+                <a href="/#screenshots" className="hover:text-white transition-colors">
+                  Screenshots
+                </a>
+              </li>
+              <li>
+                <a href="/#tech" className="hover:text-white transition-colors">
+                  Tech Stack
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* Legal */}
+          <div>
+            <h4 className="font-semibold text-white mb-4">Legal</h4>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <Link href="/privacy" className="hover:text-white transition-colors">
+                  Privacy Policy
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Developer */}
+          <div>
+            <h4 className="font-semibold text-white mb-4">Developer</h4>
+            <ul className="space-y-2 text-sm">
+              <li>{APP_META.developer.name}</li>
+              <li>
+                <a
+                  href={`mailto:${APP_META.developer.email}`}
+                  className="hover:text-white transition-colors"
+                >
+                  {APP_META.developer.email}
+                </a>
+              </li>
+              <li>
+                <a
+                  href={APP_META.developer.github}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors"
+                >
+                  GitHub
+                </a>
+              </li>
+              <li>
+                <Link href="/contact" className="hover:text-white transition-colors">
+                  Contact
+                </Link>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Bottom bar */}
+        <div className="mt-12 pt-8 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm">
+          <p>&copy; {new Date().getFullYear()} {APP_META.developer.name}. All rights reserved.</p>
+          <p className="flex items-center gap-1">
+            Made with <Heart className="w-3.5 h-3.5 text-brand-error fill-brand-error" /> for families
+          </p>
+        </div>
+      </div>
+    </footer>
+  );
+}
