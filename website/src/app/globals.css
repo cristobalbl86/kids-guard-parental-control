@@ -27,8 +27,30 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Dark mode transition */
-* {
+body,
+h1, h2, h3, h4, h5, h6,
+p,
+a,
+button,
+input,
+textarea,
+select,
+[role="button"] {
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body,
+  h1, h2, h3, h4, h5, h6,
+  p,
+  a,
+  button,
+  input,
+  textarea,
+  select,
+  [role="button"] {
+    transition: none !important;
+  }
 }
 
 /* Custom scrollbar */
