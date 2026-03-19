@@ -1,9 +1,30 @@
 'use client';
 
-import * as LucideIcons from 'lucide-react';
+import {
+  Smartphone,
+  Code,
+  FileCode,
+  Palette,
+  KeyRound,
+  Globe,
+  Braces,
+  Eye,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { TECH_STACK } from '@/lib/constants';
 import { AnimatedSection } from '@/components/ui/AnimatedSection';
 import { cn } from '@/lib/utils';
+
+const ICON_MAP: Record<string, LucideIcon> = {
+  Smartphone,
+  Code,
+  FileCode,
+  Palette,
+  KeyRound,
+  Globe,
+  Braces,
+  Eye,
+};
 
 export function TechStack() {
   return (
@@ -25,8 +46,7 @@ export function TechStack() {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {TECH_STACK.map((tech, i) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const IconComponent = (LucideIcons as any)[tech.icon] as React.ComponentType<{ className?: string }> | undefined;
+            const IconComponent = ICON_MAP[tech.icon];
             return (
               <AnimatedSection key={tech.name} delay={i * 0.05}>
                 <div
