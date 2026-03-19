@@ -26,6 +26,7 @@ export function ThemeToggle({ className }: { className?: string }) {
 
   return (
     <button
+      type="button"
       onClick={toggle}
       className={cn(
         'w-9 h-9 rounded-lg flex items-center justify-center',
