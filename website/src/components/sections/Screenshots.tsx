@@ -1,8 +1,44 @@
 'use client';
 
+import { useState } from 'react';
 import { SCREENSHOTS } from '@/lib/constants';
 import { PhoneMockup } from '@/components/ui/PhoneMockup';
 import { AnimatedSection } from '@/components/ui/AnimatedSection';
+
+interface ScreenshotImageProps {
+  src: string;
+  alt: string;
+  label: string;
+}
+
+function ScreenshotImage({ src, alt, label }: ScreenshotImageProps) {
+  const [hasError, setHasError] = useState(false);
+
+  if (hasError) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900">
+        <div className="text-center p-4">
+          <div className="w-12 h-12 rounded-xl bg-brand-primary/20 flex items-center justify-center mx-auto mb-3">
+            <svg className="w-6 h-6 text-brand-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <p className="text-xs font-medium text-slate-500">{label}</p>
+          <p className="text-[10px] text-slate-400 mt-1">Replace with screenshot</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className="w-full h-full object-cover"
+      onError={() => setHasError(true)}
+    />
+  );
+}
 
 export function Screenshots() {
   return (
@@ -30,34 +66,10 @@ export function Screenshots() {
               <AnimatedSection key={screenshot.id} delay={i * 0.1}>
                 <div className="flex flex-col items-center gap-4">
                   <PhoneMockup>
-                    <img
+                    <ScreenshotImage
                       src={screenshot.file}
                       alt={screenshot.label}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        // Show placeholder if image not found
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                        target.parentElement!.classList.add(
-                          'flex',
-                          'items-center',
-                          'justify-center',
-                          'bg-gradient-to-br'
-                        );
-                        const placeholder = document.createElement('div');
-                        placeholder.className =
-                          'text-center p-4';
-                        placeholder.innerHTML = `
-                          <div class="w-12 h-12 rounded-xl bg-brand-primary/20 flex items-center justify-center mx-auto mb-3">
-                            <svg class="w-6 h-6 text-brand-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                          </div>
-                          <p class="text-xs font-medium text-slate-500">${screenshot.label}</p>
-                          <p class="text-[10px] text-slate-400 mt-1">Replace with screenshot</p>
-                        `;
-                        target.parentElement!.appendChild(placeholder);
-                      }}
+                      label={screenshot.label}
                     />
                   </PhoneMockup>
                   <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
