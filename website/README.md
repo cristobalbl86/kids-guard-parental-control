@@ -79,24 +79,37 @@ Brand colors are defined as CSS custom properties in `src/app/globals.css` under
 }
 ```
 
-## Contact Form Setup (Formspree)
+## Contact Form Setup (Formspree) — REQUIRED
 
-The contact form uses [Formspree](https://formspree.io) to send emails. Formspree is free for up to 50 submissions/month — no backend, no database, no environment variables needed.
+The contact form uses [Formspree](https://formspree.io) to deliver messages via email. **You must configure it** or visitors will see a *"Contact form is not yet configured"* error.
+
+Formspree is free for up to 50 submissions/month — no backend, no database, no environment variables needed.
 
 ### Setup (2 minutes)
 
 1. Go to [formspree.io](https://formspree.io) and create a free account
-2. Create a new form and set the recipient email (e.g. `cristobalbtech@gmail.com`)
-3. Copy your **Form ID** (e.g. if your endpoint is `https://formspree.io/f/xrgvalbn`, the ID is `xrgvalbn`)
-4. Paste it into `src/lib/constants.ts`:
+2. Click **+ New Form**, give it a name (e.g. "Kids Guard Contact"), and set the recipient email
+3. After creating the form, copy the **Form ID** from the endpoint URL
+   - Example: if your endpoint is `https://formspree.io/f/xrgvalbn`, the ID is **`xrgvalbn`**
+4. Open `src/lib/constants.ts` and paste your ID:
 
 ```ts
-export const FORMSPREE_ID = 'xrgvalbn'; // Replace with your actual form ID
+export const FORMSPREE_ID = 'xrgvalbn'; // ← replace with your actual form ID
 ```
+
+5. Rebuild and redeploy the site
 
 That's it. Form submissions will be emailed directly to you.
 
-> **Note**: Without a Formspree ID, the form will show a friendly "email us directly" message. The rest of the website works fine without it.
+### Troubleshooting
+
+| Problem | Solution |
+|---|---|
+| *"Contact form is not yet configured"* | `FORMSPREE_ID` is empty in `constants.ts` — follow setup steps above |
+| Form submits but no email received | Check your Formspree dashboard for submissions; check spam folder |
+| 4xx error on submit | Verify the form ID is correct and the form is active on Formspree |
+
+> **Note**: The rest of the website works fine without Formspree configured — only the contact form is affected.
 
 ## Deployment
 
