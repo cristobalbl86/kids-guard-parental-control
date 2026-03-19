@@ -43,7 +43,7 @@ export function Header() {
             link.href.startsWith('#') ? (
               <a
                 key={link.label}
-                href={link.href}
+                href={`/${link.href}`}
                 className="text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-brand-primary dark:hover:text-brand-primary transition-colors"
               >
                 {link.label}
