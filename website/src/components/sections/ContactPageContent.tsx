@@ -1,6 +1,6 @@
 'use client';
 
-import { Mail, Github, User, MapPin } from 'lucide-react';
+import { Github, User, MapPin } from 'lucide-react';
 import { APP_META } from '@/lib/constants';
 import { ContactForm } from '@/components/ui/ContactForm';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -40,13 +40,6 @@ export function ContactPageContent() {
               </p>
 
               <div className="space-y-4">
-                <a
-                  href={`mailto:${APP_META.developer.email}`}
-                  className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400 hover:text-brand-primary dark:hover:text-brand-primary transition-colors"
-                >
-                  <Mail className="w-4 h-4 shrink-0" />
-                  {APP_META.developer.email}
-                </a>
                 <a
                   href={APP_META.developer.github}
                   target="_blank"
