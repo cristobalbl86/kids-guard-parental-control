@@ -14,6 +14,7 @@ import type { LucideIcon } from 'lucide-react';
 import { TECH_STACK } from '@/lib/constants';
 import { AnimatedSection } from '@/components/ui/AnimatedSection';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const ICON_MAP: Record<string, LucideIcon> = {
   Smartphone,
@@ -27,19 +28,21 @@ const ICON_MAP: Record<string, LucideIcon> = {
 };
 
 export function TechStack() {
+  const { t } = useLanguage();
+
   return (
     <section id="tech" className="py-20 md:py-28 bg-brand-bg dark:bg-slate-950">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <AnimatedSection>
           <div className="text-center mb-14">
             <span className="inline-block px-3 py-1 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-sm font-medium mb-4">
-              Built With
+              {t.techStack.badge}
             </span>
             <h2 className="text-3xl sm:text-4xl font-bold font-[family-name:var(--font-jakarta)] mb-4">
-              Modern tech stack
+              {t.techStack.title}
             </h2>
             <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-              Built with proven technologies for reliability, performance, and security.
+              {t.techStack.description}
             </p>
           </div>
         </AnimatedSection>

@@ -1,9 +1,14 @@
+'use client';
+
 import { Shield, Heart } from 'lucide-react';
 import { APP_META } from '@/lib/constants';
 import { PlayStoreBadge } from '@/components/ui/PlayStoreBadge';
+import { useLanguage } from '@/lib/LanguageContext';
 import Link from 'next/link';
 
 export function Footer() {
+  const { t } = useLanguage();
+
   return (
     <footer className="bg-slate-900 dark:bg-slate-950 text-slate-400 border-t border-slate-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -24,26 +29,26 @@ export function Footer() {
 
           {/* Product */}
           <div>
-            <h4 className="font-semibold text-white mb-4">Product</h4>
+            <h4 className="font-semibold text-white mb-4">{t.footer.product}</h4>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link href="/#features" className="hover:text-white transition-colors">
-                  Features
+                  {t.nav.features}
                 </Link>
               </li>
               <li>
                 <Link href="/#benefits" className="hover:text-white transition-colors">
-                  Benefits
+                  {t.nav.benefits}
                 </Link>
               </li>
               <li>
                 <Link href="/#screenshots" className="hover:text-white transition-colors">
-                  Screenshots
+                  {t.nav.screenshots}
                 </Link>
               </li>
               <li>
                 <Link href="/#tech" className="hover:text-white transition-colors">
-                  Tech Stack
+                  {t.nav.techStack}
                 </Link>
               </li>
             </ul>
@@ -51,11 +56,11 @@ export function Footer() {
 
           {/* Legal */}
           <div>
-            <h4 className="font-semibold text-white mb-4">Legal</h4>
+            <h4 className="font-semibold text-white mb-4">{t.footer.legal}</h4>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link href="/privacy" className="hover:text-white transition-colors">
-                  Privacy Policy
+                  {t.footer.privacyPolicy}
                 </Link>
               </li>
             </ul>
@@ -63,7 +68,7 @@ export function Footer() {
 
           {/* Developer */}
           <div>
-            <h4 className="font-semibold text-white mb-4">Developer</h4>
+            <h4 className="font-semibold text-white mb-4">{t.footer.developer}</h4>
             <ul className="space-y-2 text-sm">
               <li>{APP_META.developer.name}</li>
               <li>
@@ -86,7 +91,7 @@ export function Footer() {
               </li>
               <li>
                 <Link href="/contact" className="hover:text-white transition-colors">
-                  Contact
+                  {t.nav.contact}
                 </Link>
               </li>
             </ul>
@@ -95,9 +100,9 @@ export function Footer() {
 
         {/* Bottom bar */}
         <div className="mt-12 pt-8 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm">
-          <p>&copy; {new Date().getFullYear()} {APP_META.developer.name}. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} {APP_META.developer.name}. {t.footer.allRightsReserved}</p>
           <p className="flex items-center gap-1">
-            Made with <Heart className="w-3.5 h-3.5 text-brand-error fill-brand-error" /> for families
+            {t.footer.madeWith} <Heart className="w-3.5 h-3.5 text-brand-error fill-brand-error" /> {t.footer.forFamilies}
           </p>
         </div>
       </div>

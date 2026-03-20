@@ -3,6 +3,7 @@ import './globals.css';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { APP_META } from '@/lib/constants';
+import { LanguageProvider } from '@/lib/LanguageContext';
 
 export const metadata: Metadata = {
   title: {
@@ -57,6 +58,10 @@ export default function RootLayout({
                   if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                     document.documentElement.classList.add('dark');
                   }
+                  var locale = localStorage.getItem('locale');
+                  if (locale === 'en' || locale === 'es') {
+                    document.documentElement.lang = locale;
+                  }
                 } catch(e) {}
               })();
             `,
@@ -64,9 +69,11 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-brand-bg text-brand-text dark:bg-slate-950 dark:text-slate-200 antialiased">
-        <Header />
-        <main className="min-h-screen">{children}</main>
-        <Footer />
+        <LanguageProvider>
+          <Header />
+          <main className="min-h-screen">{children}</main>
+          <Footer />
+        </LanguageProvider>
       </body>
     </html>
   );

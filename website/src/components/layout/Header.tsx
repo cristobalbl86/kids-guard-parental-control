@@ -3,13 +3,24 @@
 import { useState, useEffect } from 'react';
 import { Menu, X, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { NAV_LINKS, APP_META } from '@/lib/constants';
+import { APP_META } from '@/lib/constants';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { LanguageToggle } from '@/components/ui/LanguageToggle';
+import { useLanguage } from '@/lib/LanguageContext';
 import Link from 'next/link';
+
+const NAV_LINK_HREFS = [
+  { href: '#features', key: 'features' },
+  { href: '#benefits', key: 'benefits' },
+  { href: '#screenshots', key: 'screenshots' },
+  { href: '#tech', key: 'techStack' },
+  { href: '/contact', key: 'contact' },
+] as const;
 
 export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { t } = useLanguage();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -39,25 +50,27 @@ export function Header() {
 
         {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-8">
-          {NAV_LINKS.map((link) =>
-            link.href.startsWith('#') ? (
+          {NAV_LINK_HREFS.map((link) => {
+            const label = t.nav[link.key as keyof typeof t.nav];
+            return link.href.startsWith('#') ? (
               <a
-                key={link.label}
+                key={link.key}
                 href={`/${link.href}`}
                 className="text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-brand-primary dark:hover:text-brand-primary transition-colors"
               >
-                {link.label}
+                {label}
               </a>
             ) : (
               <Link
-                key={link.label}
+                key={link.key}
                 href={link.href}
                 className="text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-brand-primary dark:hover:text-brand-primary transition-colors"
               >
-                {link.label}
+                {label}
               </Link>
-            )
-          )}
+            );
+          })}
+          <LanguageToggle />
           <ThemeToggle />
           <a
             href={APP_META.playStoreUrl}
@@ -65,12 +78,13 @@ export function Header() {
             rel="noopener noreferrer"
             className="px-4 py-2 rounded-lg bg-brand-primary text-white text-sm font-medium hover:bg-blue-600 transition-colors"
           >
-            Download
+            {t.nav.download}
           </a>
         </div>
 
         {/* Mobile menu button */}
         <div className="flex items-center gap-2 md:hidden">
+          <LanguageToggle />
           <ThemeToggle />
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
@@ -86,34 +100,35 @@ export function Header() {
       {mobileOpen && (
         <div className="md:hidden bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
           <div className="px-4 py-4 space-y-3">
-            {NAV_LINKS.map((link) =>
-              link.href.startsWith('#') ? (
+            {NAV_LINK_HREFS.map((link) => {
+              const label = t.nav[link.key as keyof typeof t.nav];
+              return link.href.startsWith('#') ? (
                 <a
-                  key={link.label}
+                  key={link.key}
                   href={link.href}
                   onClick={() => setMobileOpen(false)}
                   className="block py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-brand-primary"
                 >
-                  {link.label}
+                  {label}
                 </a>
               ) : (
                 <Link
-                  key={link.label}
+                  key={link.key}
                   href={link.href}
                   onClick={() => setMobileOpen(false)}
                   className="block py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-brand-primary"
                 >
-                  {link.label}
+                  {label}
                 </Link>
-              )
-            )}
+              );
+            })}
             <a
               href={APP_META.playStoreUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="block w-full text-center py-2.5 rounded-lg bg-brand-primary text-white text-sm font-medium"
             >
-              Download on Google Play
+              {t.footer.downloadOnGooglePlay}
             </a>
           </div>
         </div>

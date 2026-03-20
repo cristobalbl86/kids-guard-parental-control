@@ -4,14 +4,16 @@ import { useState } from 'react';
 import { SCREENSHOTS } from '@/lib/constants';
 import { PhoneMockup } from '@/components/ui/PhoneMockup';
 import { AnimatedSection } from '@/components/ui/AnimatedSection';
+import { useLanguage } from '@/lib/LanguageContext';
 
 interface ScreenshotImageProps {
   src: string;
   alt: string;
   label: string;
+  replacePlaceholder: string;
 }
 
-function ScreenshotImage({ src, alt, label }: ScreenshotImageProps) {
+function ScreenshotImage({ src, alt, label, replacePlaceholder }: ScreenshotImageProps) {
   const [hasError, setHasError] = useState(false);
 
   if (hasError) {
@@ -24,7 +26,7 @@ function ScreenshotImage({ src, alt, label }: ScreenshotImageProps) {
             </svg>
           </div>
           <p className="text-xs font-medium text-slate-500">{label}</p>
-          <p className="text-[10px] text-slate-400 mt-1">Replace with screenshot</p>
+          <p className="text-[10px] text-slate-400 mt-1">{replacePlaceholder}</p>
         </div>
       </div>
     );
@@ -41,20 +43,21 @@ function ScreenshotImage({ src, alt, label }: ScreenshotImageProps) {
 }
 
 export function Screenshots() {
+  const { t } = useLanguage();
+
   return (
     <section id="screenshots" className="py-20 md:py-28 bg-white dark:bg-slate-900/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <AnimatedSection>
           <div className="text-center mb-14">
             <span className="inline-block px-3 py-1 rounded-full bg-brand-accent/10 text-brand-accent text-sm font-medium mb-4">
-              Screenshots
+              {t.screenshots.badge}
             </span>
             <h2 className="text-3xl sm:text-4xl font-bold font-[family-name:var(--font-jakarta)] mb-4">
-              See it in action
+              {t.screenshots.title}
             </h2>
             <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-              A clean, intuitive interface designed for parents. No clutter, no confusion &mdash; just
-              the controls you need.
+              {t.screenshots.description}
             </p>
           </div>
         </AnimatedSection>
@@ -68,12 +71,13 @@ export function Screenshots() {
                   <PhoneMockup>
                     <ScreenshotImage
                       src={screenshot.file}
-                      alt={screenshot.label}
-                      label={screenshot.label}
+                      alt={t.screenshots.labels[i]}
+                      label={t.screenshots.labels[i]}
+                      replacePlaceholder={t.screenshots.replaceWithScreenshot}
                     />
                   </PhoneMockup>
                   <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                    {screenshot.label}
+                    {t.screenshots.labels[i]}
                   </span>
                 </div>
               </AnimatedSection>
@@ -83,7 +87,7 @@ export function Screenshots() {
 
         <AnimatedSection delay={0.3}>
           <p className="text-center text-sm text-slate-500 dark:text-slate-500 mt-4">
-            Scroll horizontally to see more screens
+            {t.screenshots.scrollHint}
           </p>
         </AnimatedSection>
       </div>
