@@ -7,7 +7,8 @@ import { useLanguage } from '@/lib/LanguageContext';
 import Link from 'next/link';
 
 export function Footer() {
-  const { t } = useLanguage();
+  const { locale, t } = useLanguage();
+  const privacyHref = locale === 'es' ? '/privacidad' : '/privacy';
 
   return (
     <footer className="bg-slate-900 dark:bg-slate-950 text-slate-400 border-t border-slate-800">
@@ -59,7 +60,7 @@ export function Footer() {
             <h4 className="font-semibold text-white mb-4">{t.footer.legal}</h4>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/privacy" className="hover:text-white transition-colors">
+                <Link href={privacyHref} className="hover:text-white transition-colors">
                   {t.footer.privacyPolicy}
                 </Link>
               </li>

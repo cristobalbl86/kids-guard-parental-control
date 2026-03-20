@@ -2,10 +2,14 @@
 
 import Link from 'next/link';
 import { APP_META } from '@/lib/constants';
-import { useLanguage } from '@/lib/LanguageContext';
+import { translations, type Locale } from '@/lib/translations';
 
-export function PrivacyPageContent() {
-  const { t } = useLanguage();
+interface PrivacyPageContentProps {
+  locale: Locale;
+}
+
+export function PrivacyPageContent({ locale }: PrivacyPageContentProps) {
+  const t = translations[locale];
   const p = t.privacy;
 
   return (
