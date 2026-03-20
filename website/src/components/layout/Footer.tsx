@@ -74,14 +74,6 @@ export function Footer() {
               <li>{APP_META.developer.name}</li>
               <li>
                 <a
-                  href={`mailto:${APP_META.developer.email}`}
-                  className="hover:text-white transition-colors"
-                >
-                  {APP_META.developer.email}
-                </a>
-              </li>
-              <li>
-                <a
                   href={APP_META.developer.github}
                   target="_blank"
                   rel="noopener noreferrer"
