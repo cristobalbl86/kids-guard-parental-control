@@ -4,8 +4,11 @@ import { AnimatedSection } from '@/components/ui/AnimatedSection';
 import { PlayStoreBadge } from '@/components/ui/PlayStoreBadge';
 import { APP_META } from '@/lib/constants';
 import { Shield } from 'lucide-react';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export function DownloadCTA() {
+  const { t } = useLanguage();
+
   return (
     <section id="download" className="py-20 md:py-28 bg-white dark:bg-slate-900/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -21,18 +24,17 @@ export function DownloadCTA() {
               </div>
 
               <h2 className="text-3xl sm:text-4xl font-bold font-[family-name:var(--font-jakarta)] mb-4">
-                Ready to protect your child&apos;s device?
+                {t.downloadCTA.title}
               </h2>
 
               <p className="text-lg text-blue-100 mb-8 max-w-xl mx-auto">
-                Download Kids Guard for free. Set up in under a minute.
-                No accounts, no cloud, no complexity.
+                {t.downloadCTA.description}
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <PlayStoreBadge size="lg" />
                 <span className="text-sm text-blue-200">
-                  Android {APP_META.minAndroid} required
+                  Android {APP_META.minAndroid} {t.downloadCTA.androidRequired}
                 </span>
               </div>
             </div>

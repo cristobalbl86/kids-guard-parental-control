@@ -5,8 +5,11 @@ import { ArrowDown, Star } from 'lucide-react';
 import { APP_META } from '@/lib/constants';
 import { PlayStoreBadge } from '@/components/ui/PlayStoreBadge';
 import { PhoneMockup } from '@/components/ui/PhoneMockup';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export function Hero() {
+  const { t } = useLanguage();
+
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden pt-16">
       {/* Background gradient */}
@@ -24,7 +27,7 @@ export function Hero() {
               className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-primary/10 dark:bg-brand-primary/20 text-brand-primary text-sm font-medium mb-6"
             >
               <Star className="w-3.5 h-3.5 fill-current" />
-              Free on Google Play
+              {t.hero.badge}
             </motion.div>
 
             <motion.h1
@@ -33,10 +36,10 @@ export function Hero() {
               transition={{ duration: 0.5, delay: 0.1 }}
               className="text-4xl sm:text-5xl lg:text-6xl font-bold font-[family-name:var(--font-jakarta)] leading-tight mb-6"
             >
-              <span className="text-brand-text dark:text-white">Take control of</span>
+              <span className="text-brand-text dark:text-white">{t.hero.titleLine1}</span>
               <br />
               <span className="bg-gradient-to-r from-brand-primary to-brand-secondary bg-clip-text text-transparent">
-                your child&apos;s device
+                {t.hero.titleLine2}
               </span>
             </motion.h1>
 
@@ -46,8 +49,7 @@ export function Hero() {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="text-lg sm:text-xl text-slate-600 dark:text-slate-400 mb-8 max-w-lg mx-auto lg:mx-0"
             >
-              Lock volume levels, set screen time limits, and protect settings with a
-              hardware-encrypted PIN. Real enforcement at the Android system level.
+              {t.hero.description}
             </motion.p>
 
             <motion.div
@@ -60,7 +62,7 @@ export function Hero() {
               <div className="text-sm text-slate-500 dark:text-slate-500">
                 <span>Android {APP_META.minAndroid}</span>
                 <span className="mx-2">|</span>
-                <span>English & Spanish</span>
+                <span>{t.hero.langLabel}</span>
               </div>
             </motion.div>
           </div>
@@ -84,10 +86,10 @@ export function Hero() {
                     </svg>
                   </div>
                   <p className="text-sm font-semibold text-brand-text dark:text-white text-center">
-                    Kids Guard
+                    {t.hero.phoneName}
                   </p>
                   <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-1">
-                    Parental Control
+                    {t.hero.phoneSubtitle}
                   </p>
                   <div className="mt-6 space-y-2 w-full">
                     <div className="h-3 rounded-full bg-brand-primary/30 w-3/4 mx-auto" />
@@ -115,7 +117,7 @@ export function Hero() {
               href="#features"
               className="flex flex-col items-center gap-2 text-slate-400 hover:text-brand-primary transition-colors"
             >
-              <span className="text-xs font-medium">Scroll to explore</span>
+              <span className="text-xs font-medium">{t.hero.scrollToExplore}</span>
               <ArrowDown className="w-4 h-4" />
             </a>
           </motion.div>

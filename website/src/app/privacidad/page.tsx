@@ -3,10 +3,10 @@ import { APP_META } from '@/lib/constants';
 import { PrivacyPageContent } from '@/components/sections/PrivacyPageContent';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy',
-  description: `Privacy Policy for ${APP_META.fullName}.`,
+  title: 'Política de Privacidad',
+  description: `Política de Privacidad de ${APP_META.fullName}.`,
 };
 
-export default function PrivacyPage() {
-  return <PrivacyPageContent locale="en" />;
+export default function PrivacidadPage() {
+  return <PrivacyPageContent locale="es" />;
 }

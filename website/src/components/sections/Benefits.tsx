@@ -1,25 +1,26 @@
 'use client';
 
 import { Check, Users, Baby } from 'lucide-react';
-import { BENEFITS } from '@/lib/constants';
 import { AnimatedSection } from '@/components/ui/AnimatedSection';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export function Benefits() {
+  const { t } = useLanguage();
+
   return (
     <section id="benefits" className="py-20 md:py-28 bg-brand-bg dark:bg-slate-950">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <AnimatedSection>
           <div className="text-center mb-14">
             <span className="inline-block px-3 py-1 rounded-full bg-brand-secondary/10 text-brand-secondary text-sm font-medium mb-4">
-              Benefits
+              {t.benefits.badge}
             </span>
             <h2 className="text-3xl sm:text-4xl font-bold font-[family-name:var(--font-jakarta)] mb-4">
-              Good for parents. Good for kids.
+              {t.benefits.title}
             </h2>
             <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-              Setting healthy boundaries helps the whole family. Here&apos;s how Kids Guard benefits
-              everyone.
+              {t.benefits.description}
             </p>
           </div>
         </AnimatedSection>
@@ -33,11 +34,11 @@ export function Benefits() {
                   <Users className="w-5 h-5 text-brand-primary" />
                 </div>
                 <h3 className="text-xl font-bold font-[family-name:var(--font-jakarta)]">
-                  For Parents
+                  {t.benefits.forParents}
                 </h3>
               </div>
               <ul className="space-y-4">
-                {BENEFITS.parents.map((benefit) => (
+                {t.benefits.parents.map((benefit) => (
                   <li key={benefit.title} className="flex gap-3">
                     <div className="mt-0.5 shrink-0">
                       <Check className="w-5 h-5 text-brand-primary" />
@@ -67,11 +68,11 @@ export function Benefits() {
                   <Baby className="w-5 h-5 text-brand-secondary" />
                 </div>
                 <h3 className="text-xl font-bold font-[family-name:var(--font-jakarta)]">
-                  For Kids
+                  {t.benefits.forKids}
                 </h3>
               </div>
               <ul className="space-y-4">
-                {BENEFITS.kids.map((benefit) => (
+                {t.benefits.kids.map((benefit) => (
                   <li key={benefit.title} className="flex gap-3">
                     <div className="mt-0.5 shrink-0">
                       <Check className="w-5 h-5 text-brand-secondary" />

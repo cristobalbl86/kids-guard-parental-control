@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Send, CheckCircle, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FORMSPREE_ID } from '@/lib/constants';
+import { useLanguage } from '@/lib/LanguageContext';
 
 type FormStatus = 'idle' | 'sending' | 'success' | 'error';
 
@@ -11,15 +12,14 @@ export function ContactForm() {
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
   const [status, setStatus] = useState<FormStatus>('idle');
   const [errorMsg, setErrorMsg] = useState('');
+  const { t } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!FORMSPREE_ID) {
       setStatus('error');
-      setErrorMsg(
-        'Contact form is not yet configured. Please email us directly.'
-      );
+      setErrorMsg(t.contact.formNotConfigured);
       return;
     }
 
@@ -46,7 +46,7 @@ export function ContactForm() {
       }
     } catch {
       setStatus('error');
-      setErrorMsg('Failed to send message. Please try again or email us directly.');
+      setErrorMsg(t.contact.formError);
     }
   };
 
@@ -55,16 +55,16 @@ export function ContactForm() {
       <div className="text-center py-12">
         <CheckCircle className="w-16 h-16 text-brand-secondary mx-auto mb-4" />
         <h3 className="text-2xl font-semibold font-[family-name:var(--font-jakarta)] mb-2">
-          Message Sent!
+          {t.contact.messageSent}
         </h3>
         <p className="text-slate-600 dark:text-slate-400 mb-6">
-          Thank you for reaching out. We&apos;ll get back to you soon.
+          {t.contact.thankYou}
         </p>
         <button
           onClick={() => setStatus('idle')}
           className="text-brand-primary hover:underline font-medium"
         >
-          Send another message
+          {t.contact.sendAnother}
         </button>
       </div>
     );
@@ -75,7 +75,7 @@ export function ContactForm() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <div>
           <label htmlFor="name" className="block text-sm font-medium mb-1.5">
-            Name
+            {t.contact.name}
           </label>
           <input
             id="name"
@@ -89,12 +89,12 @@ export function ContactForm() {
               'bg-white dark:bg-slate-800 focus:ring-2 focus:ring-brand-primary focus:border-transparent',
               'outline-none transition-shadow'
             )}
-            placeholder="Your name"
+            placeholder={t.contact.namePlaceholder}
           />
         </div>
         <div>
           <label htmlFor="email" className="block text-sm font-medium mb-1.5">
-            Email
+            {t.contact.email}
           </label>
           <input
             id="email"
@@ -108,14 +108,14 @@ export function ContactForm() {
               'bg-white dark:bg-slate-800 focus:ring-2 focus:ring-brand-primary focus:border-transparent',
               'outline-none transition-shadow'
             )}
-            placeholder="you@example.com"
+            placeholder={t.contact.emailPlaceholder}
           />
         </div>
       </div>
 
       <div>
         <label htmlFor="subject" className="block text-sm font-medium mb-1.5">
-          Subject
+          {t.contact.subject}
         </label>
         <input
           id="subject"
@@ -129,13 +129,13 @@ export function ContactForm() {
             'bg-white dark:bg-slate-800 focus:ring-2 focus:ring-brand-primary focus:border-transparent',
             'outline-none transition-shadow'
           )}
-          placeholder="What's this about?"
+          placeholder={t.contact.subjectPlaceholder}
         />
       </div>
 
       <div>
         <label htmlFor="message" className="block text-sm font-medium mb-1.5">
-          Message
+          {t.contact.message}
         </label>
         <textarea
           id="message"
@@ -149,7 +149,7 @@ export function ContactForm() {
             'bg-white dark:bg-slate-800 focus:ring-2 focus:ring-brand-primary focus:border-transparent',
             'outline-none transition-shadow resize-none'
           )}
-          placeholder="Your message..."
+          placeholder={t.contact.messagePlaceholder}
         />
       </div>
 
@@ -173,12 +173,12 @@ export function ContactForm() {
         {status === 'sending' ? (
           <>
             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            Sending...
+            {t.contact.sending}
           </>
         ) : (
           <>
             <Send className="w-4 h-4" />
-            Send Message
+            {t.contact.sendButton}
           </>
         )}
       </button>
