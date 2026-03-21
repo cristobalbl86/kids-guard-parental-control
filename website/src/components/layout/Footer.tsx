@@ -1,6 +1,6 @@
 'use client';
 
-import { Shield, Heart } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import { APP_META } from '@/lib/constants';
 import { PlayStoreBadge } from '@/components/ui/PlayStoreBadge';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -17,9 +17,7 @@ export function Footer() {
           {/* Brand */}
           <div className="md:col-span-1">
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-brand-primary flex items-center justify-center">
-                <Shield className="w-5 h-5 text-white" />
-              </div>
+              <img src="/images/app-icon.png" alt={APP_META.name} className="w-8 h-8 rounded-lg" />
               <span className="font-[family-name:var(--font-jakarta)] font-bold text-lg text-white">
                 {APP_META.name}
               </span>

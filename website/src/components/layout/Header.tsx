@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Menu, X, Shield } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { APP_META } from '@/lib/constants';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
@@ -40,9 +40,7 @@ export function Header() {
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-8 h-8 rounded-lg bg-brand-primary flex items-center justify-center">
-            <Shield className="w-5 h-5 text-white" />
-          </div>
+          <img src="/images/app-icon.png" alt={APP_META.name} className="w-8 h-8 rounded-lg" />
           <span className="font-[family-name:var(--font-jakarta)] font-bold text-lg">
             {APP_META.name}
           </span>

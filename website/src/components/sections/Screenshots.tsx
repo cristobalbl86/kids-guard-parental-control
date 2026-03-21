@@ -36,7 +36,7 @@ function ScreenshotImage({ src, alt, label, replacePlaceholder }: ScreenshotImag
     <img
       src={src}
       alt={alt}
-      className="w-full h-full object-cover"
+      className="w-full h-full object-contain"
       onError={() => setHasError(true)}
     />
   );
@@ -68,7 +68,7 @@ export function Screenshots() {
             {SCREENSHOTS.map((screenshot, i) => (
               <AnimatedSection key={screenshot.id} delay={i * 0.1}>
                 <div className="flex flex-col items-center gap-4">
-                  <PhoneMockup>
+                  <PhoneMockup size="md">
                     <ScreenshotImage
                       src={screenshot.file}
                       alt={t.screenshots.labels[i]}

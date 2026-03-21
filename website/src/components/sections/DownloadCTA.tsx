@@ -3,7 +3,6 @@
 import { AnimatedSection } from '@/components/ui/AnimatedSection';
 import { PlayStoreBadge } from '@/components/ui/PlayStoreBadge';
 import { APP_META } from '@/lib/constants';
-import { Shield } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 
 export function DownloadCTA() {
@@ -19,9 +18,7 @@ export function DownloadCTA() {
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
 
             <div className="relative z-10">
-              <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center mx-auto mb-6">
-                <Shield className="w-9 h-9" />
-              </div>
+              <img src="/images/app-icon.png" alt={APP_META.name} className="w-16 h-16 rounded-2xl mx-auto mb-6" />
 
               <h2 className="text-3xl sm:text-4xl font-bold font-[family-name:var(--font-jakarta)] mb-4">
                 {t.downloadCTA.title}

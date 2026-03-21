@@ -3,18 +3,21 @@ import { cn } from '@/lib/utils';
 interface PhoneMockupProps {
   children: React.ReactNode;
   className?: string;
+  size?: 'sm' | 'md';
 }
 
-export function PhoneMockup({ children, className }: PhoneMockupProps) {
+export function PhoneMockup({ children, className, size = 'sm' }: PhoneMockupProps) {
+  const width = size === 'md' ? 300 : 260;
+
   return (
-    <div className={cn('relative mx-auto', className)} style={{ width: 260 }}>
+    <div className={cn('relative mx-auto', className)} style={{ width }}>
       {/* Phone frame */}
       <div className="relative rounded-[2.5rem] border-[6px] border-slate-800 dark:border-slate-600 bg-slate-800 dark:bg-slate-600 shadow-2xl overflow-hidden">
         {/* Notch */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-6 bg-slate-800 dark:bg-slate-600 rounded-b-2xl z-10" />
 
         {/* Screen */}
-        <div className="relative aspect-[9/19.5] overflow-hidden rounded-[2rem] bg-white dark:bg-slate-900">
+        <div className="relative aspect-[9/20] overflow-hidden rounded-[2rem] bg-white dark:bg-slate-900">
           {children}
         </div>
 
