@@ -162,11 +162,11 @@ export const TECH_STACK = [
 ];
 
 export const SCREENSHOTS = [
-  { id: 1, label: 'Welcome Screen', file: '/images/screenshots/screenshot-1.svg' },
-  { id: 2, label: 'Home Dashboard', file: '/images/screenshots/screenshot-2.svg' },
-  { id: 3, label: 'Parent Settings', file: '/images/screenshots/screenshot-3.svg' },
-  { id: 4, label: 'Screen Time', file: '/images/screenshots/screenshot-4.svg' },
-  { id: 5, label: 'PIN Entry', file: '/images/screenshots/screenshot-5.svg' },
+  { id: 1, label: 'Welcome Screen', file: '/images/screenshots/screenshot-1.png' },
+  { id: 2, label: 'Home Dashboard', file: '/images/screenshots/screenshot-2.png' },
+  { id: 3, label: 'Parent Settings', file: '/images/screenshots/screenshot-3.png' },
+  { id: 4, label: 'Screen Time', file: '/images/screenshots/screenshot-4.png' },
+  { id: 5, label: 'PIN Entry', file: '/images/screenshots/screenshot-5.png' },
 ];
 
 export const NAV_LINKS = [

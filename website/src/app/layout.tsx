@@ -32,6 +32,10 @@ export const metadata: Metadata = {
     title: APP_META.fullName,
     description: APP_META.description,
   },
+  icons: {
+    icon: '/images/app-icon.png',
+    apple: '/images/app-icon.png',
+  },
   robots: 'index, follow',
 };
 
