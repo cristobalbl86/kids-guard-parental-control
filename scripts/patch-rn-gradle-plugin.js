@@ -11,6 +11,13 @@
  *    into hard build failures.
  *
  * Re-applied via postinstall since npm install overwrites node_modules.
+ *
+ * If a future @react-native/gradle-plugin release reformats this file, our
+ * exact-string replacements can silently fail to match, which would leave
+ * the plugin unpatched while npm install still reports success - the build
+ * would only fail much later, inside Android Gradle. To avoid that, we
+ * verify the file is actually in a known-good state (unpatched-and-fixed,
+ * or already-patched) before exiting 0, and hard-fail postinstall otherwise.
  */
 const fs = require('fs');
 const path = require('path');
@@ -28,10 +35,17 @@ if (!fs.existsSync(target)) {
   process.exit(0);
 }
 
-let contents = fs.readFileSync(target, 'utf8');
-const original = contents;
+const isFixed = (text) =>
+  !text.includes('serviceOf') && !text.includes('allWarningsAsErrors = true');
 
-contents = contents
+const original = fs.readFileSync(target, 'utf8');
+
+if (isFixed(original)) {
+  // Already patched (or a newer plugin release that doesn't need this fix).
+  process.exit(0);
+}
+
+const patched = original
   .replace(
     'import org.gradle.api.internal.classpath.ModuleRegistry\nimport org.gradle.api.tasks.testing.logging.TestExceptionFormat\nimport org.gradle.configurationcache.extensions.serviceOf\nimport org.jetbrains.kotlin.gradle.tasks.KotlinCompile',
     'import org.gradle.api.tasks.testing.logging.TestExceptionFormat\nimport org.jetbrains.kotlin.gradle.tasks.KotlinCompile',
@@ -42,9 +56,15 @@ contents = contents
   )
   .replace('allWarningsAsErrors = true', 'allWarningsAsErrors = false');
 
-if (contents === original) {
-  process.exit(0);
+if (!isFixed(patched)) {
+  console.error(
+    '[patch-rn-gradle-plugin] Failed to patch @react-native/gradle-plugin build.gradle.kts: ' +
+      'expected content not found (the plugin may have changed format). ' +
+      'This must be fixed before building for Android, or the Gradle build will fail under Gradle 8.10+. ' +
+      'See scripts/patch-rn-gradle-plugin.js.',
+  );
+  process.exit(1);
 }
 
-fs.writeFileSync(target, contents);
+fs.writeFileSync(target, patched);
 console.log('[patch-rn-gradle-plugin] Patched @react-native/gradle-plugin build.gradle.kts');

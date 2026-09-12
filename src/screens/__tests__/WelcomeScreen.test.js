@@ -3,6 +3,11 @@ import { render, fireEvent } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 import WelcomeScreen from '../WelcomeScreen';
 
+// Mock safe area insets (no SafeAreaProvider ancestor in these tests)
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+}));
+
 describe('WelcomeScreen', () => {
   let mockNavigation;
 

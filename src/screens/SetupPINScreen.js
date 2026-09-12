@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Text, Surface, HelperText } from 'react-native-paper';
 import { theme } from '../utils/theme';
 import { savePIN, completeFirstLaunch } from '../utils/storage';
@@ -7,6 +8,7 @@ import PINInput from '../components/PINInput';
 import { t } from '../utils/i18n';
 
 export default function SetupPINScreen({ navigation, onSetupComplete }) {
+  const insets = useSafeAreaInsets();
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [step, setStep] = useState(1); // 1 = enter PIN, 2 = confirm PIN
@@ -59,7 +61,7 @@ export default function SetupPINScreen({ navigation, onSetupComplete }) {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: 20 + insets.bottom }]}>
       <Surface style={styles.content}>
         <Text variant="headlineMedium" style={styles.title}>
           {step === 1 ? t('setupPIN.titleCreate') : t('setupPIN.titleConfirm')}

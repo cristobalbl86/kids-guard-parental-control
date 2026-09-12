@@ -1,12 +1,20 @@
 import React from 'react';
 import { View, StyleSheet, Image } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Text, Surface } from 'react-native-paper';
 import { theme } from '../utils/theme';
 import { t } from '../utils/i18n';
 
 export default function WelcomeScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        { paddingTop: 20 + insets.top, paddingBottom: 20 + insets.bottom },
+      ]}
+    >
       <Surface style={styles.content}>
         <Text variant="headlineLarge" style={styles.title}>
           {t('welcome.title')}
