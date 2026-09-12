@@ -5,18 +5,18 @@ This guide explains how to build a release APK or AAB for the Kids Guard app.
 ## Prerequisites
 
 - Node.js 18+
-- Android Studio with Android SDK (API 35+)
+- Android Studio with Android SDK (API 36+)
 - React Native development environment configured
 - Release keystore generated
 
 ## Important: API Level Requirement
 
-Google Play requires apps to target **API level 35** (Android 15).
+Google Play requires apps to target **API level 36** (Android 16).
 
-The app is already configured for API 35 in `android/build.gradle`:
+The app is already configured for API 36 in `android/build.gradle`:
 ```gradle
-compileSdkVersion = 35
-targetSdkVersion = 35
+compileSdkVersion = 36
+targetSdkVersion = 36
 ```
 
 ## Quick Build for Play Store

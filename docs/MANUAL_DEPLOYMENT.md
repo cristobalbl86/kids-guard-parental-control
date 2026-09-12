@@ -119,7 +119,7 @@ android/app/build/outputs/bundle/release/app-release.aab
 - Or set `ANDROID_HOME` environment variable
 
 **Error: API level errors**
-- Solution: Ensure `compileSdkVersion = 35` in `android/build.gradle`
+- Solution: Ensure `compileSdkVersion = 36` in `android/build.gradle`
 
 ---
 
@@ -148,7 +148,7 @@ android/app/build/outputs/bundle/release/app-release.aab
 **Google will process your bundle**:
 - ✅ Scans for malware
 - ✅ Validates signing
-- ✅ Checks API level (must be 35+)
+- ✅ Checks API level (must be 36+)
 - ✅ Optimizes for different devices
 
 ### Add Release Notes
@@ -372,7 +372,7 @@ cd android
 - Must be higher than any previous release
 
 **"API level X required"**
-- Ensure `targetSdkVersion = 35` in `android/build.gradle`
+- Ensure `targetSdkVersion = 36` in `android/build.gradle`
 - Rebuild with new target
 
 ### Review Issues
