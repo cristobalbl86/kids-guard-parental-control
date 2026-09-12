@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TextInput as RNTextInput } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Text, Surface, HelperText } from 'react-native-paper';
 import { theme } from '../utils/theme';
 import { t } from '../utils/i18n';
 
 export default function ParentVerificationScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const [num1, setNum1] = useState(0);
   const [num2, setNum2] = useState(0);
   const [answer, setAnswer] = useState('');
@@ -49,7 +51,7 @@ export default function ParentVerificationScreen({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: 20 + insets.bottom }]}>
       <Surface style={styles.content}>
         <Text variant="headlineMedium" style={styles.title}>
           {t('parentVerification.title')}

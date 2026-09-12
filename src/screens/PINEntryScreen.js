@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Text, Surface, HelperText } from 'react-native-paper';
 import { theme } from '../utils/theme';
 import { verifyPIN } from '../utils/storage';
@@ -7,6 +8,7 @@ import PINInput from '../components/PINInput';
 import { t } from '../utils/i18n';
 
 export default function PINEntryScreen({ navigation, route }) {
+  const insets = useSafeAreaInsets();
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -45,7 +47,7 @@ export default function PINEntryScreen({ navigation, route }) {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: 20 + insets.bottom }]}>
       <Surface style={styles.content}>
         <Text variant="headlineMedium" style={styles.title}>
           {t('pinEntry.title')}

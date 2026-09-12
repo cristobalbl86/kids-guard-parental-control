@@ -15,6 +15,11 @@ jest.mock('../../utils/admobControl', () => ({
 // Mock PINChangeDialog component
 jest.mock('../../components/PINChangeDialog', () => 'PINChangeDialog');
 
+// Mock safe area insets (no SafeAreaProvider ancestor in these tests)
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+}));
+
 describe('ParentSettingsScreen', () => {
   const mockNavigation = {
     navigate: jest.fn(),

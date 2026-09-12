@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Text, Card, Switch, IconButton, ProgressBar } from 'react-native-paper';
 import { theme, statusColors } from '../utils/theme';
 import { getAllSettings, changePIN } from '../utils/storage';
@@ -18,6 +19,7 @@ import { t } from '../utils/i18n';
 import { showInterstitialIfEligible } from '../utils/admobControl';
 
 export default function ParentSettingsScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const [volumeValue, setVolumeValue] = useState(50);
   const [volumeLocked, setVolumeLocked] = useState(false);
   const [screenTimeLimitMinutes, setScreenTimeLimitMinutes] = useState(120);
@@ -533,7 +535,10 @@ export default function ParentSettingsScreen({ navigation }) {
     <View style={styles.container}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: 16 + insets.bottom },
+        ]}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
