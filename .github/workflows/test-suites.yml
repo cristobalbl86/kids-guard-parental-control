@@ -6,10 +6,6 @@ on:
   push:
     branches: [ main ]
 
-permissions:
-  contents: read
-  pull-requests: write
-
 jobs:
   storage-tests:
     name: Storage Tests
@@ -71,38 +67,3 @@ jobs:
             exit 1
           fi
           echo "✅ All test suites passed!"
-
-      - name: Comment on PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const storageResult = '${{ needs.storage-tests.result }}';
-            const screenResult = '${{ needs.screen-tests.result }}';
-            const volumeResult = '${{ needs.volume-tests.result }}';
-
-            const emoji = (result) => result === 'success' ? '✅' : '❌';
-
-            const comment = `## Test Results Summary
-
-            | Test Suite | Status | Tests |
-            |------------|--------|-------|
-            | Storage | ${emoji(storageResult)} ${storageResult} | 45 tests |
-            | Screens | ${emoji(screenResult)} ${screenResult} | 85 tests |
-            | Volume Control | ${emoji(volumeResult)} ${volumeResult} | 43 tests |
-
-            ${
-              [storageResult, screenResult, volumeResult].every(r => r === 'success')
-                ? '✅ **All tests passed!** Ready to merge.'
-                : '❌ **Tests failed.** Please fix failing tests before merging.'
-            }
-
-            [View detailed results](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            `;
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });
