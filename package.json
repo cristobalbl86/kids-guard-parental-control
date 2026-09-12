@@ -14,7 +14,6 @@
     "test:verbose": "jest --verbose",
     "test:storage": "jest src/utils/__tests__/storage.test.js",
     "test:volumeControl": "jest src/utils/__tests__/volumeControl.test.js --runInBand",
-    "test:brightnessControl": "jest src/utils/__tests__/brightnessControl.test.js --runInBand",
     "test:utils": "jest src/utils/__tests__",
     "test:screens": "jest src/screens/__tests__",
     "test:ci": "jest --ci --coverage --maxWorkers=2",
