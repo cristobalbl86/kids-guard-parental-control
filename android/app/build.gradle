@@ -81,8 +81,8 @@ android {
         applicationId "com.kidsguard"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 15
-        versionName "1.1.5"
+        versionCode 16
+        versionName "1.1.6"
 
         // Enable core library desugaring for Java 21 APIs on older Android versions
         multiDexEnabled true
