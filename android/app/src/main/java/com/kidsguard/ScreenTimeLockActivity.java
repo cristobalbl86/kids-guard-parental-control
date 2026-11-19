@@ -235,7 +235,11 @@ public class ScreenTimeLockActivity extends Activity {
                             Toast.makeText(ScreenTimeLockActivity.this, getString(R.string.screen_time_unlocked), Toast.LENGTH_SHORT).show();
                             finish();
                         } else {
-                            Toast.makeText(ScreenTimeLockActivity.this, getString(R.string.screen_time_incorrect_pin), Toast.LENGTH_SHORT).show();
+                            long lockoutMs = PINStorageHelper.getLockoutRemainingMs(ScreenTimeLockActivity.this);
+                            String msg = lockoutMs > 0
+                                ? getString(R.string.screen_time_locked_out, (int) Math.ceil(lockoutMs / 1000.0))
+                                : getString(R.string.screen_time_incorrect_pin);
+                            Toast.makeText(ScreenTimeLockActivity.this, msg, Toast.LENGTH_SHORT).show();
                             pinInput.setText("");
                         }
                     }

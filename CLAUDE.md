@@ -242,9 +242,11 @@ Volume and brightness settings follow consistent structure:
 
 ### PIN Verification with Lockout
 `storage.js` implements **exponential backoff lockout**:
-- After 5 failed attempts: 60 seconds lockout
-- After 10 failed attempts: 120 seconds lockout
-- Pattern: `Math.pow(2, Math.floor(attempts / 5)) * 60 * 1000`
+- After 5 failed attempts: 120 seconds lockout
+- After 10 failed attempts: 240 seconds lockout
+- Pattern: `min(Math.pow(2, Math.floor(attempts / 5)) * 60 * 1000, 1 hour)`
+- Failed-attempt count resets only after a successful PIN, so backoff keeps escalating
+- Native lock screens (`LockOverlayManager`, `ScreenTimeLockActivity`) verify via `PINStorageHelper`, which stores a salted PBKDF2 hash (legacy plaintext is migrated) and has its own lockout
 
 **Important**: `verifyPIN()` throws errors for lockout - callers must handle exceptions.
 

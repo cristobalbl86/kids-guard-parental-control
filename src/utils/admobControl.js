@@ -7,6 +7,10 @@ let adLoaded = false;
 let admobInitialized = false;
 let isShowingAd = false;
 let minimumViewTimeMs = 10000; // 10 seconds
+let loadRetryCount = 0;
+let retryTimer = null;
+const BASE_RETRY_DELAY_MS = 30000;
+const MAX_LOAD_RETRIES = 5;
 
 // Get ad unit ID from config
 const getAdUnitId = () => {
@@ -66,6 +70,7 @@ const setupAdEventListeners = () => {
   // Ad loaded successfully
   interstitial.addAdEventListener(AdEventType.LOADED, () => {
     adLoaded = true;
+    loadRetryCount = 0;
     console.log('[AdMob] Interstitial ad loaded');
   });
 
@@ -74,17 +79,28 @@ const setupAdEventListeners = () => {
     adLoaded = false;
     console.error('[AdMob] Ad failed to load:', error);
 
-    // Retry loading after 30 seconds
-    setTimeout(() => {
+    // Retry with exponential backoff (30s, 60s, 120s...), capped to avoid
+    // endless network requests when offline or on no-fill.
+    if (retryTimer || loadRetryCount >= MAX_LOAD_RETRIES) {
+      return;
+    }
+    const delay = BASE_RETRY_DELAY_MS * Math.pow(2, loadRetryCount);
+    loadRetryCount++;
+    retryTimer = setTimeout(() => {
+      retryTimer = null;
       console.log('[AdMob] Retrying ad load...');
       loadInterstitialAd();
-    }, 30000);
+    }, delay);
   });
 
   // Ad opened (shown to user)
   interstitial.addAdEventListener(AdEventType.OPENED, () => {
     isShowingAd = true;
     console.log('[AdMob] Ad opened');
+
+    // Save timestamp as soon as the ad opens so the AppState change caused by
+    // closing the ad can't trigger a second ad before CLOSED is handled.
+    Promise.resolve(saveLastAdShownTime()).catch(() => {});
 
     // Start minimum view time countdown
     enforceMinimumViewTime();
@@ -217,4 +233,9 @@ export const __resetAdMobForTesting = () => {
   adLoaded = false;
   admobInitialized = false;
   isShowingAd = false;
+  loadRetryCount = 0;
+  if (retryTimer) {
+    clearTimeout(retryTimer);
+    retryTimer = null;
+  }
 };

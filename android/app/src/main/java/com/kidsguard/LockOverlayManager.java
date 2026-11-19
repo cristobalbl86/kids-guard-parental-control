@@ -271,6 +271,10 @@ public class LockOverlayManager {
                     }
                     dismiss();
                 } else {
+                    long lockoutMs = PINStorageHelper.getLockoutRemainingMs(context);
+                    errorText.setText(lockoutMs > 0
+                        ? context.getString(R.string.screen_time_locked_out, (int) Math.ceil(lockoutMs / 1000.0))
+                        : context.getString(R.string.screen_time_incorrect_pin));
                     errorText.setVisibility(View.VISIBLE);
                     pinInput.setText("");
                 }

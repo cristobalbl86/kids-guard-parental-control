@@ -146,6 +146,30 @@ describe('Storage Utility', () => {
         expect(AsyncStorage.removeItem).toHaveBeenCalledWith('lockout_until');
         expect(AsyncStorage.removeItem).toHaveBeenCalledWith('failed_attempts');
       });
+
+      it('should keep failed attempt count after lockout expires so backoff escalates', async () => {
+        const pastTime = Date.now() - 1000;
+        Keychain.getGenericPassword.mockResolvedValue({ password: '1234' });
+        AsyncStorage.getItem.mockImplementation((key) => {
+          if (key === 'lockout_until') return Promise.resolve(pastTime.toString());
+          if (key === 'failed_attempts') return Promise.resolve('9');
+          return Promise.resolve(null);
+        });
+
+        await expect(verifyPIN('9999')).rejects.toThrow('240 seconds');
+        expect(AsyncStorage.removeItem).not.toHaveBeenCalledWith('failed_attempts');
+        expect(AsyncStorage.setItem).toHaveBeenCalledWith('failed_attempts', '10');
+      });
+
+      it('should cap lockout duration at 1 hour', async () => {
+        Keychain.getGenericPassword.mockResolvedValue({ password: '1234' });
+        AsyncStorage.getItem.mockImplementation((key) => {
+          if (key === 'failed_attempts') return Promise.resolve('49');
+          return Promise.resolve(null);
+        });
+
+        await expect(verifyPIN('9999')).rejects.toThrow('3600 seconds');
+      });
     });
 
     describe('changePIN', () => {
