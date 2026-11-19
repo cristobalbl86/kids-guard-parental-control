@@ -15,6 +15,8 @@ const KEYS = {
   LAST_AD_SHOWN: 'last_ad_shown',
 };
 
+const MAX_LOCKOUT_MS = 60 * 60 * 1000;
+
 // Initialize app on first launch
 export const initializeApp = async () => {
   try {
@@ -100,9 +102,9 @@ export const verifyPIN = async (inputPIN) => {
         const remainingSeconds = Math.ceil((lockoutTime - Date.now()) / 1000);
         throw new Error(`Locked out. Please try again in ${remainingSeconds} seconds.`);
       } else {
-        // Lockout period has passed
+        // Lockout period has passed. Keep FAILED_ATTEMPTS so the backoff keeps
+        // escalating; it is only reset after a successful verification.
         await AsyncStorage.removeItem(KEYS.LOCKOUT_UNTIL);
-        await AsyncStorage.removeItem(KEYS.FAILED_ATTEMPTS);
       }
     }
 
@@ -120,6 +122,7 @@ export const verifyPIN = async (inputPIN) => {
     } else {
       // Reset failed attempts on successful login
       await AsyncStorage.removeItem(KEYS.FAILED_ATTEMPTS);
+      await AsyncStorage.removeItem(KEYS.LOCKOUT_UNTIL);
     }
 
     return isValid;
@@ -142,7 +145,11 @@ const handleFailedAttempt = async () => {
 
     // Lockout logic: 5 attempts = lockout
     if (newFailedAttempts >= 5) {
-      const lockoutDuration = Math.pow(2, Math.floor(newFailedAttempts / 5)) * 60 * 1000; // Exponential backoff
+      // Exponential backoff, capped at 1 hour
+      const lockoutDuration = Math.min(
+        Math.pow(2, Math.floor(newFailedAttempts / 5)) * 60 * 1000,
+        MAX_LOCKOUT_MS,
+      );
       const lockoutUntil = Date.now() + lockoutDuration;
       await AsyncStorage.setItem(KEYS.LOCKOUT_UNTIL, lockoutUntil.toString());
       throw new Error(`Too many failed attempts. Locked out for ${lockoutDuration / 1000} seconds.`);

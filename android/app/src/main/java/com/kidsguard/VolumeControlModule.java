@@ -4,6 +4,7 @@ import android.content.Context;
 import android.media.AudioManager;
 import android.database.ContentObserver;
 import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import com.facebook.react.bridge.ReactApplicationContext;
@@ -40,7 +41,7 @@ public class VolumeControlModule extends ReactContextBaseJavaModule {
     public void setVolume(int volumeLevel, Promise promise) {
         try {
             int maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
-            int targetVolume = (int) ((volumeLevel / 100.0) * maxVolume);
+            int targetVolume = percentToIndex(volumeLevel, maxVolume);
 
             audioManager.setStreamVolume(
                 AudioManager.STREAM_MUSIC,
@@ -139,7 +140,7 @@ public class VolumeControlModule extends ReactContextBaseJavaModule {
             return; // Already monitoring
         }
 
-        volumeObserver = new ContentObserver(new Handler()) {
+        volumeObserver = new ContentObserver(new Handler(Looper.getMainLooper())) {
             @Override
             public void onChange(boolean selfChange) {
                 super.onChange(selfChange);
@@ -174,10 +175,12 @@ public class VolumeControlModule extends ReactContextBaseJavaModule {
         try {
             int currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
             int maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
-            int currentPercent = (int) ((currentVolume * 100.0) / maxVolume);
+            int targetVolume = percentToIndex(enforcedVolume, maxVolume);
 
-            if (Math.abs(currentPercent - enforcedVolume) > 2) {
-                int targetVolume = (int) ((enforcedVolume / 100.0) * maxVolume);
+            // Compare raw indices: percent rounding could otherwise re-trigger
+            // enforcement (and JS events) on every unrelated settings change.
+            if (currentVolume != targetVolume) {
+                int currentPercent = (int) ((currentVolume * 100.0) / maxVolume);
                 audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, targetVolume, 0);
 
                 Log.d(TAG, "Volume enforced: " + currentPercent + "% -> " + enforcedVolume + "%");
@@ -188,6 +191,11 @@ public class VolumeControlModule extends ReactContextBaseJavaModule {
         } catch (Exception e) {
             Log.e(TAG, "Error enforcing volume", e);
         }
+    }
+
+    private static int percentToIndex(int percent, int maxVolume) {
+        int clamped = Math.max(0, Math.min(100, percent));
+        return (int) Math.round((clamped / 100.0) * maxVolume);
     }
 
     private void sendVolumeEnforcedEvent(int from, int to) {

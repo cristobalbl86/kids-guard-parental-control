@@ -159,6 +159,44 @@ describe('AdMob Control', () => {
 
       jest.useRealTimers();
     });
+
+    it('should back off retries and stop after max attempts', async () => {
+      jest.useFakeTimers();
+
+      await initializeAdMob();
+      mockInterstitial.load.mockClear();
+
+      // 1st error -> retry after 30s
+      mockEventListeners[AdEventType.ERROR]({message: 'fail'});
+      // Duplicate error while a retry is pending must not schedule another
+      mockEventListeners[AdEventType.ERROR]({message: 'fail'});
+      jest.advanceTimersByTime(30000);
+      expect(mockInterstitial.load).toHaveBeenCalledTimes(1);
+
+      // 2nd error -> retry after 60s
+      mockEventListeners[AdEventType.ERROR]({message: 'fail'});
+      jest.advanceTimersByTime(30000);
+      expect(mockInterstitial.load).toHaveBeenCalledTimes(1);
+      jest.advanceTimersByTime(30000);
+      expect(mockInterstitial.load).toHaveBeenCalledTimes(2);
+
+      // Exhaust remaining retries
+      for (let i = 0; i < 10; i++) {
+        mockEventListeners[AdEventType.ERROR]({message: 'fail'});
+        jest.advanceTimersByTime(30000 * 64);
+      }
+      expect(mockInterstitial.load).toHaveBeenCalledTimes(5);
+
+      jest.useRealTimers();
+    });
+
+    it('should save timestamp as soon as ad opens', async () => {
+      await initializeAdMob();
+      saveLastAdShownTime.mockClear();
+      mockEventListeners[AdEventType.OPENED]();
+
+      expect(saveLastAdShownTime).toHaveBeenCalled();
+    });
   });
 
   describe('showInterstitialIfEligible', () => {

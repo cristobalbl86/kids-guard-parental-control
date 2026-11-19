@@ -5,7 +5,7 @@
  * @format
  */
 
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {createStackNavigator} from '@react-navigation/stack';
 import {Provider as PaperProvider} from 'react-native-paper';
@@ -35,7 +35,7 @@ export default function App() {
   const [isFirstLaunch, setIsFirstLaunch] = useState(null);
   const [isSetupComplete, setIsSetupComplete] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [appState, setAppState] = useState(AppState.currentState);
+  const appStateRef = useRef(AppState.currentState);
 
   useEffect(() => {
     initializeApplication();
@@ -50,8 +50,10 @@ export default function App() {
 
     const handleAppStateChange = async (nextAppState: string) => {
       // Only show ads when transitioning FROM background/inactive TO active (foreground)
+      const prevAppState = appStateRef.current;
+      appStateRef.current = nextAppState;
       const isComingToForeground =
-        (appState === 'background' || appState === 'inactive') &&
+        (prevAppState === 'background' || prevAppState === 'inactive') &&
         nextAppState === 'active';
 
       if (isComingToForeground) {
@@ -59,8 +61,6 @@ export default function App() {
         // Try to show ad if eligible (6-hour check happens inside)
         await showInterstitialIfEligible();
       }
-
-      setAppState(nextAppState);
     };
 
     const subscription = AppState.addEventListener('change', handleAppStateChange);
@@ -68,7 +68,7 @@ export default function App() {
     return () => {
       subscription?.remove();
     };
-  }, [isSetupComplete, appState]);
+  }, [isSetupComplete]);
 
   const initializeApplication = async () => {
     try {

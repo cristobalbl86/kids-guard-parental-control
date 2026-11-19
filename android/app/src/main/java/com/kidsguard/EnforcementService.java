@@ -38,7 +38,9 @@ public class EnforcementService extends Service {
         public void run() {
             if (isMonitoringScreenTime) {
                 checkScreenTimeLimit();
-                screenTimeHandler.postDelayed(this, SCREEN_TIME_CHECK_INTERVAL_MS);
+                if (isMonitoringScreenTime) {
+                    screenTimeHandler.postDelayed(this, SCREEN_TIME_CHECK_INTERVAL_MS);
+                }
             }
         }
     };
@@ -170,7 +172,9 @@ public class EnforcementService extends Service {
         try {
             boolean enforcing = ScreenTimeModule.isEnforcingStatic(this);
             if (!enforcing) {
-                Log.d(TAG, "Screen time not enforcing, skipping check");
+                // Enforcement was turned off (e.g. PIN unlock on lock screen): stop polling
+                Log.d(TAG, "Screen time no longer enforcing, stopping checks");
+                stopScreenTimeMonitoring();
                 return;
             }
 
@@ -251,7 +255,11 @@ public class EnforcementService extends Service {
             try {
                 int limitSeconds = ScreenTimeModule.getLimitStatic(this);
                 int hours = limitSeconds / 3600;
-                contentText = "Screen time limit: " + hours + "h/day";
+                int minutes = (limitSeconds % 3600) / 60;
+                String formatted = hours > 0
+                    ? (minutes > 0 ? hours + "h " + minutes + "m" : hours + "h")
+                    : minutes + "m";
+                contentText = "Screen time limit: " + formatted;
             } catch (Exception e) {
                 contentText = "Screen time limit active";
             }

@@ -75,6 +75,14 @@ public class EnforcementServiceModule extends ReactContextBaseJavaModule {
                 return;
             }
 
+            // Screen time enforcement also runs in this service; don't kill it
+            // when only volume enforcement is turned off.
+            if (ScreenTimeModule.isEnforcingStatic(reactContext)) {
+                Log.d(TAG, "Screen time still enforcing, keeping service running");
+                promise.resolve(false);
+                return;
+            }
+
             Intent serviceIntent = new Intent(reactContext, EnforcementService.class);
             reactContext.stopService(serviceIntent);
 

@@ -12,5 +12,6 @@
     <string name="screen_time_enter_pin_toast">Por favor, ingresa el PIN</string>
     <string name="screen_time_unlocked">Desbloqueado</string>
     <string name="screen_time_incorrect_pin">PIN incorrecto</string>
+    <string name="screen_time_locked_out">Demasiados intentos. Inténtalo de nuevo en %1$d segundos.</string>
     <string name="screen_time_only_parent">Solo un padre puede desbloquear</string>
 </resources>
